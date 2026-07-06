@@ -1026,6 +1026,26 @@ const ADJUST_CAT_OPTIONS = ['전체','생철','중량','경량','압축','선반
 const ADJUST_INCREASE_WORDS = ['인상','추가','올림','인상함'];
 const ADJUST_DECREASE_WORDS = ['인하','차감','감액','삭감','내림'];
 
+// ── 코드에 내장된 예약 조정 ──────────────────────────────────
+// localStorage 예약(dangapyo-price-pending)과 달리, 이 배열은 파일 자체에 들어있어서
+// 사용자가 어떤 기기/브라우저로 접속하든 시행일이 되면 동일하게 자동 적용됨.
+// (localStorage 예약은 기기별로 따로 저장되기 때문에 여러 기기에서 동시에 정확히 반영하려면
+// 이렇게 코드 레벨에 박아두는 게 더 안전함 — 배포 자동화 이후 채택한 방식.)
+const SCHEDULED_ADJUSTMENTS = [
+  {
+    id: 'sched-2026-07-07-dk',
+    effectiveDate: '2026-07-07',
+    description: '동국제강 전품목 -10원 (7/7부)',
+    rules: [{ catFilter: '전체', fieldPreset: 'dk_u', delta: -10 }],
+  },
+  {
+    id: 'sched-2026-07-07-bs',
+    effectiveDate: '2026-07-07',
+    description: '보성(춘천) 매입단가(도착+상차) 전품목 -10원 (7/7부)',
+    rules: [{ catFilter: '전체', fieldPreset: 'bs_al', delta: -10 }],
+  },
+];
+
 function getAdjustLog() {
   try { return JSON.parse(localStorage.getItem(LS_KEY_ADJUST_LOG) || '[]'); }
   catch { return []; }
@@ -1086,6 +1106,10 @@ function rebuildData() {
   data = JSON.parse(JSON.stringify(ORIGINAL_DATA));
   log.forEach(entry => applyRulesToData(data, entry.rules));
 
+  // 코드 내장 예약 조정: 기기/브라우저와 무관하게 시행일이 되면 전부 동일하게 적용됨
+  const scheduledApplied = SCHEDULED_ADJUSTMENTS.filter(s => s.effectiveDate <= today);
+  scheduledApplied.forEach(s => applyRulesToData(data, s.rules));
+
   const qa = getQuickAdjust();
   if (qa.posco) {
     data.forEach(item => {
@@ -1099,7 +1123,8 @@ function rebuildData() {
     });
   }
 
-  const lastEntry = log.length ? log.reduce((a,b) => (a.effectiveDate > b.effectiveDate ? a : b)) : null;
+  const dateCandidates = log.concat(scheduledApplied);
+  const lastEntry = dateCandidates.length ? dateCandidates.reduce((a,b) => (a.effectiveDate > b.effectiveDate ? a : b)) : null;
   const label = document.getElementById('base-date-label');
   if (label) label.textContent = (lastEntry ? formatMD(lastEntry.effectiveDate) : BASE_DATE_FALLBACK) + ' 기준';
 
@@ -1298,13 +1323,20 @@ function renderPendingPanel() {
   const section = document.getElementById('pending-section');
   const list = document.getElementById('pending-list');
   if (!section || !list) return;
+  const today = todayISO();
   const pending = getPendingQueue().slice().sort((a,b) => a.effectiveDate.localeCompare(b.effectiveDate));
-  section.style.display = pending.length ? 'block' : 'none';
+  const scheduledUpcoming = SCHEDULED_ADJUSTMENTS.filter(s => s.effectiveDate > today)
+    .slice().sort((a,b) => a.effectiveDate.localeCompare(b.effectiveDate));
+  section.style.display = (pending.length || scheduledUpcoming.length) ? 'block' : 'none';
   list.innerHTML = pending.map(p => `
     <div class="edit-row">
       <div class="edit-row-label">${p.description}<br><span style="font-size:11px;color:var(--sub);">${formatMD(p.effectiveDate)} 시행 예정</span></div>
       <button class="small-btn primary" style="flex:0 0 auto;padding:8px 10px;" onclick="applyPendingNow(${p.id})">지금 적용</button>
       <button class="small-btn danger" style="flex:0 0 auto;padding:8px 10px;" onclick="removePendingItem(${p.id})">삭제</button>
+    </div>`).join('')
+    + scheduledUpcoming.map(s => `
+    <div class="edit-row">
+      <div class="edit-row-label">${s.description}<br><span style="font-size:11px;color:var(--sub);">${formatMD(s.effectiveDate)} 시행 예정 · 모든 기기에 자동 반영</span></div>
     </div>`).join('');
 }
 
