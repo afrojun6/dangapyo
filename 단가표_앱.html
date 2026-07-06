@@ -1,0 +1,2428 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="단가표">
+<meta name="theme-color" content="#1565C0">
+<meta name="msapplication-TileColor" content="#0D47A1">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="./icon-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="./icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="./icon-152.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>단가표</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --primary: #1E6FD9;
+    --primary-light: #E8F0FC;
+    --posco: #E53935;
+    --posco-light: #FFEBEE;
+    --dongkuk: #1565C0;
+    --dongkuk-light: #E3F2FD;
+    --bosong: #2E7D32;
+    --bosong-light: #E8F5E9;
+    --bg: #F5F5F7;
+    --card: #FFFFFF;
+    --text: #1C1C1E;
+    --sub: #6E6E73;
+    --border: #E5E5EA;
+    --tab-bar: #FFFFFF;
+    --radius: 14px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+  /* Header */
+  .header { background: var(--card); padding: 14px 16px 10px; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border); }
+  .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .header h1 { font-size: 22px; font-weight: 700; }
+  .date-badge { font-size: 12px; color: var(--sub); background: var(--bg); padding: 4px 10px; border-radius: 20px; }
+  .freight-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 20px; border: none; cursor: pointer; transition: all .15s; }
+  .freight-toggle.on { background: #E8F5E9; color: #2E7D32; }
+  .freight-toggle.off { background: var(--bg); color: var(--sub); }
+  .freight-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .search-bar { display: flex; align-items: center; background: var(--bg); border-radius: 10px; padding: 8px 12px; gap: 8px; }
+  .search-bar input { border: none; background: none; font-size: 15px; width: 100%; outline: none; color: var(--text); }
+  .search-bar svg { flex-shrink: 0; color: var(--sub); }
+  .clear-btn { background: none; border: none; cursor: pointer; color: var(--sub); font-size: 18px; padding: 0 2px; display: none; }
+
+  /* Category chips */
+  .chips-wrap { padding: 10px 16px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; background: var(--card); border-bottom: 1px solid var(--border); }
+  .chips-wrap::-webkit-scrollbar { display: none; }
+  .chip { flex-shrink: 0; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; cursor: pointer; background: var(--bg); color: var(--sub); border: none; transition: all .15s; }
+  .chip.active { background: var(--primary); color: #fff; }
+
+  /* Tab Content */
+  .tab-content { display: none; padding-bottom: 80px; }
+  .tab-content.active { display: block; }
+
+  /* Product list */
+  .list-wrap { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .product-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .product-card-header { padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+  .product-name { font-size: 16px; font-weight: 600; }
+  .category-badge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+  .cat-생철  { background: #FFF3E0; color: #E65100; }
+  .cat-중량  { background: #E8EAF6; color: #283593; }
+  .cat-경량  { background: #F3E5F5; color: #6A1B9A; }
+  .cat-압축  { background: #E0F2F1; color: #00695C; }
+  .cat-선반  { background: #E8F5E9; color: #2E7D32; }
+  .cat-길로틴{ background: #FFF8E1; color: #F57F17; }
+  .cat-슈레더{ background: #FCE4EC; color: #880E4F; }
+
+  .chevron { font-size: 12px; color: var(--sub); transition: transform .2s; }
+  .product-card.open .chevron { transform: rotate(180deg); }
+
+  .price-grid { display: none; padding: 0 14px 14px; gap: 8px; grid-template-columns: repeat(4,1fr); }
+  .product-card.open .price-grid { display: grid; }
+
+  .price-box { border-radius: 10px; padding: 10px; text-align: center; }
+  .price-box.posco { background: var(--posco-light); }
+  .price-box.dongkuk { background: var(--dongkuk-light); }
+  .price-box.bosong { background: var(--bosong-light); }
+  .price-box .supplier { font-size: 10px; font-weight: 600; margin-bottom: 4px; }
+  .price-box.posco .supplier { color: var(--posco); }
+  .price-box.dongkuk .supplier { color: var(--dongkuk); }
+  .price-box.bosong .supplier { color: var(--bosong); }
+  .price-box .loc { font-size: 10px; color: var(--sub); margin-bottom: 2px; }
+  .price-box .price-val { font-size: 17px; font-weight: 700; }
+  .price-box .price-val.null-val { color: var(--sub); font-size: 13px; font-weight: 400; }
+  .price-box .sub-price { font-size: 11px; color: var(--sub); margin-top: 2px; }
+
+  /* Summary row */
+  .summary-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; padding: 10px 14px 0; }
+  .summary-item { text-align: center; }
+  .summary-item .s-label { font-size: 10px; color: var(--sub); }
+  .summary-item .s-val { font-size: 15px; font-weight: 600; }
+  .price-main { font-size:17px; font-weight:800; line-height:1.1; }
+  .price-base { display:inline-block; margin-left:4px; font-size:10px; font-weight:600; color:var(--sub); vertical-align:baseline; }
+  .summary-item .price-main { font-size:15px; }
+  .summary-item .price-base { display:block; margin-left:0; margin-top:2px; font-size:9px; }
+
+  /* Calculator - reference style */
+  .calc-wrap { padding: 14px 10px 86px; background:#F3F4F8; }
+  .calc-hero { padding: 2px 0 12px; }
+  .calc-title-row { display:flex; align-items:flex-end; justify-content:space-between; gap:10px; margin-bottom:4px; }
+  .calc-title-row h2 { font-size:21px; font-weight:800; letter-spacing:-0.2px; }
+  .base-date { font-size:12px; color:var(--primary); font-weight:700; }
+  .calc-subtitle { font-size:11px; color:#8A8D98; }
+  .mode-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0; }
+  .mode-card { border:1.5px solid var(--border); border-radius:10px; min-height:72px; background:#fff; color:#333; font-weight:800; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; box-shadow:0 2px 8px rgba(0,0,0,.04); cursor:pointer; }
+  .mode-card.active { background:#315AEF; color:#fff; border-color:#315AEF; }
+  .mode-card small { font-size:11px; opacity:.8; font-weight:600; }
+  .quick-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+  .quick-btn { border:1px solid var(--border); background:#fff; border-radius:9px; padding:10px 8px; font-size:13px; font-weight:800; color:#6E6E73; cursor:pointer; box-shadow:0 1px 5px rgba(0,0,0,.04); }
+  .quick-btn.active { color:#111827; }
+  .calc-card { background:var(--card); border-radius:12px; box-shadow:0 4px 18px rgba(23,31,56,.06); padding:14px 12px; margin-bottom:10px; border:1px solid #EEF0F5; }
+  .calc-card h3 { font-size:12px; font-weight:800; margin-bottom:10px; color:#8A8D98; }
+  .grade-grid { display:flex; gap:7px; overflow-x:auto; padding-bottom:2px; scrollbar-width:none; }
+  .grade-grid::-webkit-scrollbar { display:none; }
+  .grade-btn { flex:0 0 auto; min-width:56px; padding:10px 12px; border-radius:8px; border:1.5px solid #E7EAF1; background:#FAFBFD; color:#9CA3AF; font-size:13px; font-weight:800; cursor:pointer; }
+  .grade-btn.active { color:#315AEF; border-color:#315AEF; background:#F4F7FF; }
+  .destination-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .destination-card { border:1.5px solid #E7EAF1; border-radius:10px; background:#fff; padding:13px 10px; text-align:center; }
+  .destination-card.active { border-color:#315AEF; background:#F1F5FF; }
+  .destination-card .label { font-size:11px; color:#8A8D98; font-weight:700; margin-bottom:8px; }
+  .destination-card .price { font-size:24px; color:#315AEF; font-weight:900; line-height:1; }
+  .destination-card .unit { margin-top:6px; font-size:10px; color:#A1A5B3; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .field { margin-bottom:10px; }
+  .field label { display:block; font-size:11px; color:#646A78; font-weight:800; margin-bottom:5px; }
+  .field small { color:#B0B5C2; font-weight:700; }
+  .calc-input, .calc-select { width:100%; border:1.5px solid #E7EAF1; border-radius:8px; background:#FAFBFD; padding:11px 12px; font-size:15px; font-weight:700; color:#1F2937; outline:none; }
+  .calc-input:focus, .calc-select:focus { border-color:#315AEF; background:#fff; }
+  .calc-input[disabled] { background:#F0F1F5; color:#B0B5C2; }
+  .stepper { display:grid; grid-template-columns:44px 1fr 44px; gap:6px; align-items:center; }
+  .stepper .calc-input { text-align:center; }
+  .stepper-btn { height:44px; border:1.5px solid #DDE2EE; border-radius:8px; background:#fff; color:#315AEF; font-size:22px; font-weight:900; cursor:pointer; }
+  .stepper-btn:active { background:#EEF3FF; transform:scale(.98); }
+  .blue-total { display:flex; align-items:center; justify-content:space-between; background:#EAF1FF; border:1px solid #D7E3FF; border-radius:10px; padding:13px 14px; color:#315AEF; font-weight:900; }
+  .blue-total .big { font-size:25px; }
+  .red-total { display:flex; align-items:center; justify-content:space-between; padding:10px 4px 0; color:#E7566B; font-size:13px; font-weight:900; }
+  .vehicle-buttons { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+  .vehicle-btn { border:1.5px solid #E7EAF1; background:#fff; border-radius:8px; padding:9px 0; font-size:12px; font-weight:800; color:#8A8D98; cursor:pointer; }
+  .vehicle-btn.active { border-color:#8B5CF6; background:#F5F0FF; color:#6D28D9; }
+  .summary-dark { background:#15182C; color:#fff; border-radius:14px; padding:16px; margin-bottom:10px; }
+  .summary-company { font-size:12px; color:#A7ADC1; margin-bottom:8px; }
+  .profit-line { display:flex; justify-content:space-between; align-items:center; }
+  .profit-line .profit { font-size:40px; line-height:1; color:#37E67B; font-weight:900; }
+  .profit-line .badge { background:#1F7A45; color:#D9FFE9; border-radius:999px; padding:5px 10px; font-size:12px; font-weight:900; }
+  .summary-mini-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-top:12px; }
+  .summary-mini { background:rgba(255,255,255,.07); border-radius:8px; padding:10px 8px; }
+  .summary-mini span { display:block; font-size:10px; color:#A7ADC1; margin-bottom:4px; }
+  .summary-mini strong { font-size:14px; color:#fff; }
+  .detail-list { background:#fff; border-radius:12px; box-shadow:0 4px 18px rgba(23,31,56,.06); padding:14px 14px 4px; margin-bottom:10px; }
+  .detail-list h3 { font-size:12px; color:#8A8D98; margin-bottom:8px; }
+  .detail-row { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #EEF0F5; padding:10px 0; font-size:14px; }
+  .detail-row:last-child { border-bottom:none; }
+  .detail-row span { color:#6B7280; }
+  .detail-row strong { color:#111827; }
+  .detail-row.final strong { color:#315AEF; font-size:17px; }
+  .expected-profit { display:flex; justify-content:space-between; align-items:center; background:linear-gradient(135deg,#246BFF,#09B5D9); color:#fff; border-radius:10px; padding:14px; font-weight:900; margin-bottom:10px; }
+  .expected-profit .amount { font-size:26px; }
+  .bottom-save { margin-bottom:8px; }
+  .muted-action { text-align:center; color:#8A8D98; font-size:13px; padding:8px; }
+  .hidden-select { display:none; }
+  #mode-heavy.active { background:linear-gradient(135deg,#8B3DF1,#7C2FE8); border-color:#8B3DF1; box-shadow:0 10px 26px rgba(139,61,241,.25); }
+  #tab-calc.heavy .grade-btn.active { color:#7C2FE8; border-color:#8B3DF1; background:#F6F0FF; }
+  #tab-calc.heavy .destination-card.active { border-color:#8B3DF1; background:#F6F0FF; }
+  #tab-calc.heavy .destination-card.active .price { color:#7C2FE8; }
+  #tab-calc.heavy .blue-total { background:#F0E7FF; border-color:#DEC7FF; color:#7C2FE8; }
+  .freight-table-toggle { width:100%; margin-top:10px; border:1px solid #E7EAF1; background:#fff; color:#4B5563; border-radius:8px; padding:10px; font-size:13px; font-weight:800; cursor:pointer; }
+  .freight-table-wrap { display:none; margin-top:10px; max-height:260px; overflow:auto; border:1px solid #EEF0F5; border-radius:10px; background:#fff; }
+  .freight-table-wrap.open { display:block; }
+  .freight-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .freight-table th { position:sticky; top:0; background:#F7F8FB; color:#6B7280; text-align:right; padding:8px 6px; border-bottom:1px solid #E7EAF1; white-space:nowrap; }
+  .freight-table th:first-child, .freight-table td:first-child { text-align:left; }
+  .freight-table td { padding:8px 6px; border-bottom:1px solid #F0F1F5; text-align:right; white-space:nowrap; }
+  .freight-table tr:last-child td { border-bottom:none; }
+  .freight-table .region-note { display:block; color:#9CA3AF; font-size:10px; margin-top:2px; }
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+  .result-item { background: var(--bg); border-radius: 10px; padding: 12px; }
+  .result-item .r-label { font-size: 11px; color: var(--sub); margin-bottom: 4px; }
+  .result-item .r-price { font-size: 13px; font-weight: 500; color: var(--sub); }
+  .result-item .r-total { font-size: 20px; font-weight: 700; margin-top: 2px; }
+  .result-item.highlight { background: var(--primary-light); }
+  .result-item.highlight .r-total { color: var(--primary); }
+
+  /* History */
+  .history-wrap { padding: 12px 16px; }
+  .history-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; margin-bottom: 12px; }
+  .history-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+  .chart-container { position: relative; height: 120px; }
+  canvas { width: 100% !important; }
+  .trend-selector { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 12px; padding-bottom: 4px; scrollbar-width: none; }
+  .trend-selector::-webkit-scrollbar { display: none; }
+  .trend-btn { flex-shrink: 0; padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--bg); font-size: 12px; cursor: pointer; color: var(--sub); font-weight: 500; }
+  .trend-btn.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
+  .history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .history-table th { color: var(--sub); font-weight: 500; padding: 6px 0; text-align: right; border-bottom: 1px solid var(--border); }
+  .history-table th:first-child { text-align: left; }
+  .history-table td { padding: 8px 0; text-align: right; border-bottom: 1px solid var(--border); }
+  .history-table td:first-child { text-align: left; font-weight: 500; }
+  .up { color: #E53935; }
+  .down { color: #1565C0; }
+  .same { color: var(--sub); }
+
+  /* Company management */
+  .company-wrap { padding: 12px 16px; }
+  .company-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; margin-bottom: 12px; }
+  .company-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .company-meta { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .company-pill { font-size: 11px; color: var(--sub); background: var(--bg); border-radius: 999px; padding: 4px 8px; }
+  .company-margin { font-size: 22px; font-weight: 800; color: var(--primary); margin-top: 6px; }
+.company-actions { display: flex; gap: 8px; margin-top: 10px; }
+.small-btn { flex: 1; padding: 9px; border-radius: 9px; border: 1.5px solid var(--border); background: var(--bg); color: var(--sub); font-size: 13px; font-weight: 600; cursor: pointer; }
+.small-btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+.small-btn.danger { color: #E53935; }
+.backup-panel { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; margin-bottom: 12px; }
+.backup-panel h3 { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
+.backup-panel p { font-size: 12px; color: var(--sub); line-height: 1.5; margin-bottom: 10px; }
+.backup-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* Edit */
+  .edit-wrap { padding: 12px 16px; }
+  .edit-section { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; margin-bottom: 12px; }
+  .edit-section h3 { font-size: 14px; font-weight: 600; color: var(--sub); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .edit-row { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 10px; }
+  .edit-row:last-child { border-bottom: none; }
+  .edit-row-label { flex: 1; font-size: 14px; font-weight: 500; }
+  .edit-inputs { display: flex; gap: 6px; }
+  .edit-input { width: 72px; padding: 8px; border-radius: 8px; border: 1.5px solid var(--border); font-size: 14px; text-align: center; background: var(--bg); }
+  .edit-input:focus { outline: none; border-color: var(--primary); }
+  .edit-input-label { font-size: 10px; color: var(--sub); text-align: center; margin-top: 2px; }
+  .save-btn { width: 100%; padding: 14px; background: var(--primary); color: #fff; border: none; border-radius: var(--radius); font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 16px; }
+  .save-btn:active { opacity: 0.85; }
+  .reset-btn { width: 100%; padding: 12px; background: var(--bg); color: var(--sub); border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; }
+
+  /* Tab bar */
+  .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--tab-bar); border-top: 1px solid var(--border); display: flex; padding: 8px 0 env(safe-area-inset-bottom, 8px); z-index: 200; }
+  .tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 4px 0; }
+  .tab-item svg { width: 24px; height: 24px; }
+  .tab-item span { font-size: 10px; font-weight: 500; }
+  .tab-item { color: var(--sub); }
+  .tab-item.active { color: var(--primary); }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 40px 20px; color: var(--sub); }
+  .empty svg { margin-bottom: 12px; opacity: 0.4; }
+  .empty p { font-size: 15px; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px); background: rgba(0,0,0,0.75); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; opacity: 0; transition: all .3s; pointer-events: none; z-index: 999; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* No data */
+  .no-data { color: var(--sub); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <h1>📊 단가표</h1>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <span class="date-badge" id="today-date"></span>
+    </div>
+  </div>
+  <div class="search-bar" id="search-bar" style="display:none;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="search-input" placeholder="품목 검색..." autocomplete="off">
+    <button class="clear-btn" id="clear-btn">✕</button>
+  </div>
+</div>
+
+<div class="chips-wrap" id="chips-wrap" style="display:none;"></div>
+
+<!-- 계산기 탭 -->
+<div class="tab-content active heavy" id="tab-calc">
+  <div class="calc-wrap">
+    <div class="calc-hero">
+      <div class="calc-title-row">
+        <h2>단가 계산기</h2>
+        <span class="base-date" id="base-date-label">6/15 기준</span>
+      </div>
+      <div class="calc-subtitle">매입 예상 · 최대 매입가 실시간 계산</div>
+    </div>
+
+    <div class="mode-grid">
+      <button class="mode-card" type="button" id="mode-compress" onclick="setCalcMode('compress')">
+        <span>⚙️</span><strong>경량 (압축)</strong><small>→ 포스코</small>
+      </button>
+      <button class="mode-card active" type="button" id="mode-heavy" onclick="setCalcMode('heavy')">
+        <span>⚙️</span><strong>중량</strong><small>→ 동국제강 인천</small>
+      </button>
+    </div>
+
+    <div class="quick-row">
+      <button class="quick-btn active" type="button" id="quickbtn-profit" onclick="setQuickMode('profit',this)">💰 이익 계산</button>
+      <button class="quick-btn" type="button" id="quickbtn-maxbuy" onclick="setQuickMode('maxbuy',this)">🛒 최대 매입가</button>
+    </div>
+
+    <select id="calc-product" class="hidden-select" onchange="updateCalc()"></select>
+
+    <div class="calc-card">
+      <h3>① 거래처</h3>
+      <input type="text" class="calc-input" id="calc-company" value="" placeholder="거래처명 입력" list="company-suggestions" oninput="updateCalc()" onchange="applyCompanySuggestion()" onfocus="renderCompanySuggestions(); this.select();">
+      <datalist id="company-suggestions"></datalist>
+      <div class="field" style="margin-top:10px;">
+        <label>매입 메모 <small>품목·사유 등 간단히 (재매입시 참고자료)</small></label>
+        <textarea class="calc-input" id="calc-memo" style="width:100%;min-height:56px;resize:vertical;" placeholder="예: 물량 많아 이적 발생, 계약 인센 추가 적용 등"></textarea>
+      </div>
+    </div>
+
+    <div class="calc-card">
+      <h3>② 품목</h3>
+      <div class="grade-grid" id="grade-buttons"></div>
+    </div>
+
+    <div class="calc-card">
+      <h3>③ 납품처</h3>
+      <div class="destination-grid" id="destination-cards"></div>
+    </div>
+
+    <div class="calc-card">
+      <h3 id="incent-card-heading">④ 인센티브 (원/kg)</h3>
+
+      <div id="incent-card-compress">
+        <div class="form-grid">
+          <div class="field"><label>업체 인센</label><input class="calc-input" id="incent-company" type="number" value="1" oninput="updateCalc()"></div>
+          <div class="field"><label>MOU 계약</label><input class="calc-input" id="incent-mou" type="number" value="10" oninput="updateCalc()"></div>
+          <div class="field"><label>MOU 인센</label><input class="calc-input" id="incent-mou-extra" type="number" value="2" oninput="updateCalc()"></div>
+          <div class="field"><label>품질 인센</label><input class="calc-input" id="incent-quality" type="number" value="2" oninput="updateCalc()"></div>
+        </div>
+      </div>
+
+      <div id="incent-card-dk" style="display:none;">
+        <div class="quick-row" style="margin-bottom:10px;">
+          <button class="quick-btn active" type="button" id="dktier-btn-general" onclick="setDkTierMode('general', this)">하치장</button>
+          <button class="quick-btn" type="button" id="dktier-btn-premium" onclick="setDkTierMode('premium', this)">우수·육성</button>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>일반계약</label><input class="calc-input" id="dk-contract" type="number" value="20" oninput="updateCalc()"></div>
+          <div class="field" id="dk-field-yard"><label>구좌하치장</label><input class="calc-input" id="dk-yard" type="number" value="20" oninput="updateCalc()"></div>
+          <div class="field" id="dk-field-premium" style="display:none;"><label>우수·육성 추가</label><input class="calc-input" id="dk-premium" type="number" value="10" oninput="updateCalc()"></div>
+          <div class="field" id="dk-field-temp" style="display:none;"><label>한시계약 <small>~7/6</small></label><input class="calc-input" id="dk-temp" type="number" value="5" oninput="updateCalc()"></div>
+        </div>
+        <div class="field" style="margin-top:6px;">
+          <label>운임보조 지역</label>
+          <select class="calc-select" id="dk-freight-region" onchange="updateCalc()"></select>
+        </div>
+      </div>
+
+      <div class="blue-total"><span>인센 합계</span><span><span class="big" id="incent-total-label">15</span> 원/kg</span></div>
+      <div class="result-grid" style="margin-top:8px;">
+        <div class="result-item">
+          <div class="r-label" style="color:var(--dongkuk)">동국제강 TOTAL</div>
+          <div class="r-total" id="total-dk-label">-</div>
+        </div>
+        <div class="result-item">
+          <div class="r-label" style="color:var(--posco)">포스코 TOTAL</div>
+          <div class="r-total" id="total-posco-label">-</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="calc-card">
+      <h3>⑤ 비용 차감 (원/kg) <small>경유운임=이적비 포함</small></h3>
+      <div class="form-grid">
+        <div class="field"><label id="freight-label">운반비</label><input class="calc-input" id="freight-display" value="23" disabled></div>
+        <div class="field">
+          <label>마당경비</label>
+          <div class="stepper">
+            <button class="stepper-btn" type="button" onclick="stepInput('calc-yard',-5,20)">−</button>
+            <input class="calc-input" id="calc-yard" type="number" value="20" min="20" step="5" oninput="syncYardCostFromTotal()">
+            <button class="stepper-btn" type="button" onclick="stepInput('calc-yard',5,20)">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>경유운임 <small>선택사항</small></label>
+        <select class="calc-select" id="calc-region" onchange="updateCalc()"><option value="">지역 없음</option></select>
+      </div>
+      <div class="vehicle-buttons">
+        <button class="vehicle-btn" type="button" onclick="setTruckSize(25,this)">25톤</button>
+        <button class="vehicle-btn active" type="button" onclick="setTruckSize(20,this)">20톤</button>
+        <button class="vehicle-btn" type="button" onclick="setTruckSize(10,this)">10톤</button>
+        <button class="vehicle-btn" type="button" onclick="setTruckSize(8,this)">8톤</button>
+      </div>
+      <button class="freight-table-toggle" type="button" id="stay-toggle" onclick="toggleStayCost()" style="margin-top:8px;">숙박비 제외</button>
+      <div style="margin-top:10px;">
+        <input type="number" class="calc-input" id="calc-vehicle-manual" placeholder="경유운임 직접 입력 예: 1000000" step="10000" min="0" oninput="updateCalc()" inputmode="numeric">
+      </div>
+      <div class="blue-total" style="margin-top:10px;"><span>경유운임</span><span><span class="big" id="vehicle-perkg-label">0</span> 원/kg</span></div>
+      <button class="freight-table-toggle" type="button" onclick="toggleFreightTable()">지역 경유운임표 보기</button>
+      <div class="freight-table-wrap" id="freight-table-wrap">
+        <table class="freight-table" id="freight-table"></table>
+      </div>
+      <div class="red-total"><span>비용 합계</span><strong id="cost-total-label">-64원/kg</strong></div>
+      <div class="blue-total" style="margin-top:10px;background:var(--primary-light);color:var(--primary);"><span>여기까지 실질 납품단가</span><span><span class="big" id="net-delivery-preview-label">0</span> 원/kg</span></div>
+    </div>
+
+    <div class="calc-card">
+      <h3>⑥ 매입 정보</h3>
+      <div class="field">
+        <label id="purchase-price-label">매입단가 (원/kg)</label>
+        <div class="stepper">
+          <button class="stepper-btn" type="button" onclick="stepInput('purchase-price',-10,300)">−</button>
+          <input class="calc-input" id="purchase-price" type="number" value="300" min="300" step="10" placeholder="거래처 제시 가격" oninput="updateCalc()">
+          <button class="stepper-btn" type="button" onclick="stepInput('purchase-price',10,300)">+</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>수량 (톤)</label>
+        <div class="stepper">
+          <button class="stepper-btn" type="button" onclick="stepInput('calc-qty',-10,50)">−</button>
+          <input class="calc-input" id="calc-qty" type="number" value="50" step="10" min="50" oninput="updateCalc()" onfocus="this.select()">
+          <button class="stepper-btn" type="button" onclick="stepInput('calc-qty',10,50)">+</button>
+        </div>
+      </div>
+      <div class="calc-subtitle">총 수익 계산시 실제 톤수 기준</div>
+    </div>
+
+    <div class="summary-dark" id="profit-summary-card"></div>
+    <div class="detail-list" id="calc-margin"></div>
+    <div class="expected-profit" id="expected-profit-card"></div>
+    <button class="save-btn bottom-save" type="button" onclick="saveCalcRecord()">💾 상담 내역 저장</button>
+    <button class="small-btn" type="button" id="share-last-btn" style="width:100%;display:none;background:#FEE500;color:#3C1E1E;border-color:#FEE500;font-weight:800;padding:12px;border-radius:14px;margin-bottom:16px;" onclick="shareCompanyRecord(lastSavedRecordId)">💬 방금 저장한 상담 카카오톡 공유</button>
+    <div class="muted-action" onclick="resetCalcForm()">↻ 초기화</div>
+
+    <input type="hidden" id="yard-compress" value="5">
+    <input type="hidden" id="yard-dust" value="5">
+    <input type="hidden" id="yard-labor" value="-10">
+    <input type="hidden" id="posco-incentive" value="0">
+    <div id="region-cost-summary" style="display:none;"></div>
+    <div id="calc-result" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- 단가표 탭 -->
+<div class="tab-content" id="tab-list">
+  <div class="list-wrap" id="product-list"></div>
+</div>
+
+<!-- 추이 탭 -->
+<div class="tab-content" id="tab-history">
+  <div class="history-wrap">
+    <div class="history-card">
+      <h3>📈 포스코 광양 단가 추이</h3>
+      <div class="trend-selector" id="trend-selector"></div>
+      <div class="chart-container">
+        <canvas id="trend-chart"></canvas>
+      </div>
+    </div>
+    <div class="history-card">
+      <h3>📋 날짜별 단가 비교</h3>
+      <div class="trend-selector" id="trend-selector2"></div>
+      <div style="overflow-x:auto;">
+        <table class="history-table" id="history-table"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 수동입력 탭 -->
+<div class="tab-content" id="tab-edit">
+  <div class="edit-wrap">
+    <div class="edit-section" id="quick-adjust-section">
+      <h3>업체 설정 (포스코·동국)</h3>
+      <div class="quick-row" style="margin-bottom:10px;">
+        <button class="quick-btn active" type="button" id="qa-btn-posco" onclick="setQuickAdjustCompany('posco', this)">포스코</button>
+        <button class="quick-btn" type="button" id="qa-btn-dk" onclick="setQuickAdjustCompany('dk', this)">동국제강</button>
+      </div>
+      <div class="blue-total"><span id="qa-company-label">포스코</span> 누적 조정<span><span class="big" id="qa-total-label">0</span> 원/kg</span></div>
+      <div class="vehicle-buttons" style="margin-top:10px;">
+        <button class="vehicle-btn" type="button" onclick="adjustQuickCompany(-5)" style="flex:1;font-size:16px;font-weight:800;">−5원</button>
+        <button class="vehicle-btn" type="button" onclick="adjustQuickCompany(5)" style="flex:1;font-size:16px;font-weight:800;">+5원</button>
+      </div>
+      <button class="reset-btn" type="button" style="margin-top:10px;" onclick="resetQuickAdjustCompany()">이 업체 조정 초기화</button>
+    </div>
+    <div class="edit-section" id="adjust-section">
+      <h3>공지 문자로 일괄 조정</h3>
+      <textarea id="adjust-input" class="calc-input" style="width:100%;min-height:90px;resize:vertical;font-weight:500;" placeholder="예)&#10;동국제강 인천공장 공지&#10;단가 인하&#10;'26년 7월 7일(화)부&#10;전 등급 10원/kg 인하"></textarea>
+      <button class="save-btn" style="margin-top:10px;margin-bottom:0;" onclick="parseAdjustmentText()">문자 분석하기</button>
+      <div id="adjust-preview"></div>
+    </div>
+    <div class="edit-section" id="pending-section" style="display:none;">
+      <h3>예약 대기 중</h3>
+      <div id="pending-list"></div>
+    </div>
+    <div class="edit-section" id="log-section" style="display:none;">
+      <h3>최근 조정 내역</h3>
+      <div id="adjust-log-list"></div>
+    </div>
+    <button class="save-btn" onclick="saveEdits()">변경사항 저장</button>
+    <div id="edit-sections"></div>
+    <button class="reset-btn" onclick="resetEdits()">원본 데이터로 초기화</button>
+  </div>
+</div>
+
+<!-- 업체관리 탭 -->
+<div class="tab-content" id="tab-company">
+  <div class="company-wrap">
+    <div class="backup-panel">
+      <h3>백업 (업체관리 + 단가조정)</h3>
+      <p>업체관리 상담 내역과 단가 조정/예약 내역을 함께 백업합니다. 다른 기기(폰↔컴퓨터)로 옮길 때 이 파일로 불러오세요.</p>
+      <div class="backup-actions">
+        <button class="small-btn primary" type="button" onclick="exportCompanyBackup()">내보내기</button>
+        <button class="small-btn" type="button" onclick="document.getElementById('backup-file').click()">불러오기</button>
+      </div>
+      <input id="backup-file" type="file" accept=".json,application/json" style="display:none" onchange="importCompanyBackup(event)">
+    </div>
+    <div id="company-list"></div>
+  </div>
+</div>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <div class="tab-item active" onclick="switchTab('calc',this)" id="tab-btn-calc">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+    <span>계산기</span>
+  </div>
+  <div class="tab-item" onclick="switchTab('list',this)" id="tab-btn-list">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    <span>단가표</span>
+  </div>
+  <div class="tab-item" onclick="switchTab('history',this)" id="tab-btn-history">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>추이</span>
+  </div>
+  <div class="tab-item" onclick="switchTab('edit',this)" id="tab-btn-edit">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    <span>수동입력</span>
+  </div>
+  <div class="tab-item" onclick="switchTab('company',this)" id="tab-btn-company">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+    <span>업체관리</span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── 원본 데이터 (0615 시트 기준, 자동업데이트) ──
+// dk_u(동국 유통도착=기본단가) 값은 2026-07-02 확정 자료 기준. dk_add/dk_contract/dk_freight_s는
+// 더 이상 계산에 쓰이지 않음(동국제강 정책값은 DK_POLICY_DEFAULT/DK_FREIGHT_REGIONS로 대체) — 참고용으로만 남김.
+const ORIGINAL_DATA = [
+  {name:'생철A', cat:'생철', posco_g:587, posco_p:572, dk_u:525, dk_add:55, dk_contract:15, dk_freight_s:8, bs_a:470, bs_l:450},
+  {name:'생철B', cat:'생철', posco_g:582, posco_p:567, dk_u:525, dk_add:55, dk_contract:15, dk_freight_s:8, bs_a:null, bs_l:null},
+  {name:'생철AL', cat:'생철', posco_g:null, posco_p:null, dk_u:510, dk_add:55, dk_contract:15, dk_freight_s:8, bs_a:null, bs_l:null},
+  {name:'생철압축', cat:'생철', posco_g:592, posco_p:577, dk_u:null, dk_add:null, dk_contract:null, dk_freight_s:null, bs_a:null, bs_l:null},
+  {name:'중량AS', cat:'중량', posco_g:579, posco_p:562, dk_u:520, dk_add:55, dk_contract:15, dk_freight_s:8, bs_a:470, bs_l:450},
+  {name:'중량A', cat:'중량', posco_g:569, posco_p:552, dk_u:505, dk_add:55, dk_contract:15, dk_freight_s:8, bs_a:450, bs_l:430},
+  {name:'중량BS', cat:'중량', posco_g:null, posco_p:null, dk_u:505, dk_add:55, dk_contract:15, dk_freight_s:8, bs_a:null, bs_l:null},
+  {name:'중량B', cat:'중량', posco_g:559, posco_p:542, dk_u:500, dk_add:55, dk_contract:15, dk_freight_s:8, bs_a:null, bs_l:null},
+  {name:'중량ALC', cat:'중량', posco_g:null, posco_p:null, dk_u:495, dk_add:55, dk_contract:15, dk_freight_s:8, bs_a:460, bs_l:440},
+  {name:'중량BLC', cat:'중량', posco_g:null, posco_p:null, dk_u:455, dk_add:55, dk_contract:15, dk_freight_s:8, bs_a:null, bs_l:null},
+  {name:'중량ALO(입고제한)', cat:'중량', posco_g:null, posco_p:null, dk_u:470, dk_add:55, dk_contract:15, dk_freight_s:8, bs_a:null, bs_l:null},
+  {name:'중량BLO(입고제한)', cat:'중량', posco_g:null, posco_p:null, dk_u:465, dk_add:55, dk_contract:15, dk_freight_s:8, bs_a:null, bs_l:null},
+  {name:'중량BLS(철말)', cat:'중량', posco_g:null, posco_p:null, dk_u:500, dk_add:55, dk_contract:15, dk_freight_s:8, bs_a:450, bs_l:430},
+  {name:'중량C(폐차철)', cat:'중량', posco_g:null, posco_p:null, dk_u:505, dk_add:55, dk_contract:15, dk_freight_s:8, bs_a:null, bs_l:null},
+  {name:'경량S', cat:'경량', posco_g:null, posco_p:null, dk_u:500, dk_add:55, dk_contract:0, dk_freight_s:8, bs_a:null, bs_l:null},
+  {name:'경량A', cat:'경량', posco_g:521, posco_p:524, dk_u:418, dk_add:55, dk_contract:0, dk_freight_s:8, bs_a:440, bs_l:420},
+  {name:'경량B', cat:'경량', posco_g:501, posco_p:504, dk_u:403, dk_add:55, dk_contract:0, dk_freight_s:8, bs_a:440, bs_l:420},
+  {name:'경량L', cat:'경량', posco_g:null, posco_p:null, dk_u:408, dk_add:55, dk_contract:0, dk_freight_s:8, bs_a:null, bs_l:null},
+  {name:'경량C(소각철)', cat:'경량', posco_g:null, posco_p:null, dk_u:325, dk_add:55, dk_contract:0, dk_freight_s:8, bs_a:null, bs_l:null},
+  {name:'압축A', cat:'압축', posco_g:548, posco_p:548, dk_u:460, dk_add:55, dk_contract:15, dk_freight_s:8, bs_a:null, bs_l:null},
+  {name:'압축AB', cat:'압축', posco_g:543, posco_p:543, dk_u:null, dk_add:null, dk_contract:null, dk_freight_s:null, bs_a:null, bs_l:null},
+  {name:'압축B', cat:'압축', posco_g:538, posco_p:538, dk_u:460, dk_add:55, dk_contract:15, dk_freight_s:8, bs_a:null, bs_l:null},
+  {name:'압축P', cat:'압축', posco_g:533, posco_p:533, dk_u:null, dk_add:null, dk_contract:null, dk_freight_s:null, bs_a:null, bs_l:null},
+  {name:'선반A', cat:'선반', posco_g:null, posco_p:null, dk_u:465, dk_add:55, dk_contract:0, dk_freight_s:8, bs_a:null, bs_l:null},
+  {name:'선반C', cat:'선반', posco_g:null, posco_p:null, dk_u:435, dk_add:55, dk_contract:0, dk_freight_s:8, bs_a:null, bs_l:null},
+  {name:'길로틴A', cat:'길로틴', posco_g:null, posco_p:null, dk_u:475, dk_add:10, dk_contract:15, dk_freight_s:10, bs_a:null, bs_l:null},
+  {name:'길로틴B', cat:'길로틴', posco_g:null, posco_p:null, dk_u:470, dk_add:10, dk_contract:15, dk_freight_s:10, bs_a:null, bs_l:null},
+  {name:'슈레더C', cat:'슈레더', posco_g:null, posco_p:null, dk_u:470, dk_add:55, dk_contract:15, dk_freight_s:8, bs_a:390, bs_l:370},
+  {name:'슈레더D', cat:'슈레더', posco_g:null, posco_p:null, dk_u:460, dk_add:20, dk_contract:15, dk_freight_s:8, bs_a:null, bs_l:null},
+];
+
+// 가격 추이 (포스코 광양 기준)
+const PRICE_HISTORY = {
+  dates: ['01/27','04/25','05/06','05/13','05/20','06/08'],
+  items: {
+    '생철A':   [467, 502, 527, 537, 572, 572],
+    '생철B':   [462, 497, 522, 532, 567, 567],
+    '생철압축':[487, 527, 547, 557, 577, 577],
+    '중량S(AS)':[467, 504, 524, 539, 569, 569],
+    '중량A':   [457, 494, 514, 529, 559, 559],
+    '중량B':   [447, 484, 504, 519, 549, 549],
+    '경량A':   [414, 441, 451, 466, 511, 511],
+    '경량B':   [384, 421, 431, 446, 491, 491],
+    '압축A':   [448, 478, 493, 508, 538, 538],
+    '압축AB':  [443, 473, 488, 503, 533, 533],
+    '압축B':   [438, 468, 483, 498, 528, 528],
+  }
+};
+
+// ── 운임 설정 (원/kg) ────────────────────────────────────
+const FREIGHT = {
+  posco_g: 26,   // 포스코 광양
+  posco_p: 24,   // 포스코 포항
+  dk:      23,   // 동국 인천
+};
+
+// ── 지역별 차량비 (25t 방통차, 동국인천 납품) ───────────────
+const REGION_DATA = [
+  {name:'고성',       fuel:330000, stay:0},
+  {name:'광명',       fuel:150000, stay:0,      note:'우주환경'},
+  {name:'남양주',     fuel:100000, stay:0},
+  {name:'대관령',     fuel:300000, stay:0},
+  {name:'베스틸',     fuel:350000, stay:0},
+  {name:'속초',       fuel:300000, stay:0},
+  {name:'양구',       fuel:120000, stay:200000},
+  {name:'양주',       fuel:130000, stay:0},
+  {name:'여주',       fuel:220000, stay:0,      note:'삼보 여주 현장'},
+  {name:'음성',       fuel:400000, stay:0},
+  {name:'인제',       fuel:150000, stay:250000},
+  {name:'인천 동부',  fuel:130000, stay:0},
+  {name:'제천',       fuel:130000, stay:0},
+  {name:'주문진',     fuel:300000, stay:0},
+  {name:'철원',       fuel:220000, stay:0},
+  {name:'춘천',       fuel:50000,  stay:500000},
+  {name:'포천',       fuel:200000, stay:0},
+  {name:'홍천',       fuel:100000, stay:0},
+  {name:'화천',       fuel:100000, stay:0},
+  {name:'화천 사창리',fuel:120000, stay:0},
+];
+
+// ── 동국제강 정책단가 (2026-07-02 확정) ─────────────────────
+// 하치장 TOTAL = 기본단가 + 구좌하치장(20,길로틴22) + 일반계약(20) + 운임보조(지역별)
+// 우수·육성 TOTAL = 기본단가 + 일반계약(20) + 우수육성추가(10) + 한시계약(5,~7/6) + 운임보조(지역별)
+const DK_POLICY_DEFAULT = {
+  contract: 20,        // 일반계약 (전업체 공통, 두 등급 모두 적용)
+  yard: 20,             // 구좌하치장 (하치장 등급만)
+  yardGuillotine: 22,   // 길로틴 품목은 구좌하치장 +2원
+  premium: 10,          // 우수·육성업체 추가 (우수·육성 등급만)
+  temp: 5,              // 한시계약 (~7/6까지)
+  tempDeadline: '2026-07-06',
+  homeRegion: '춘천',   // 보성자원 마당 소재지 기준 기본 운임보조 지역
+};
+// 운반비 보조단가(운임보조) — 지역별 34곳, 동국제강이 보성에 지급하는 지원금(원/kg)
+const DK_FREIGHT_REGIONS = [
+  {name:'김포', amount:3}, {name:'오산', amount:3}, {name:'의정부', amount:3}, {name:'수원', amount:3}, {name:'용인(기흥/수지)', amount:3},
+  {name:'하남', amount:4},
+  {name:'고양', amount:5}, {name:'시흥', amount:5}, {name:'파주', amount:5}, {name:'양주', amount:5}, {name:'가평', amount:5}, {name:'양평', amount:5}, {name:'연천', amount:5}, {name:'동두천', amount:5}, {name:'진천', amount:5}, {name:'서산', amount:5}, {name:'태안', amount:5},
+  {name:'구리', amount:6}, {name:'광주', amount:6}, {name:'여주', amount:6}, {name:'당진', amount:6},
+  {name:'이천', amount:7}, {name:'강릉', amount:7},
+  {name:'화성', amount:8}, {name:'평택', amount:8}, {name:'용인(처인)', amount:8}, {name:'춘천', amount:8}, {name:'아산', amount:8}, {name:'천안', amount:8},
+  {name:'안성', amount:9}, {name:'음성', amount:9},
+  {name:'남양주', amount:10}, {name:'포천', amount:10}, {name:'원주', amount:10},
+];
+
+// ── 기초 거래처 목록 ───────────────────────────────────────
+// 엑셀에는 거래처명 원장이 없어 우선 기본 목록 + 저장된 상담 내역을 자동완성에 함께 사용합니다.
+const COMPANY_MASTER = [
+  "성림자원",
+  "이레알에스",
+  "개미상사",
+  "티에프코리아",
+  "신친구자원",
+  "평남자원",
+  "윤태현",
+  "근화고물상",
+  "현우금속",
+  "강릉고물상",
+  "전영식",
+  "대교자원",
+  "김남형",
+  "대박자원",
+  "금성스틸",
+  "박희성",
+  "보성자원",
+  "엄기성",
+  "현대수지",
+  "화성개발주식회사",
+  "현대만물상",
+  "정미경",
+  "칠성자원",
+  "김형철",
+  "강재철",
+  "동부고물상",
+  "강원자원",
+  "윤한병",
+  "이영식",
+  "장영길",
+  "김덕환",
+  "최진영",
+  "소양강고물상",
+  "강원지역재활용센타",
+  "로또자원",
+  "춘천미주고물상",
+  "홍천자원",
+  "송대천",
+  "새마을자원",
+  "홍정표",
+  "한국자원",
+  "태창",
+  "강원재생",
+  "정현식",
+  "대흥산업주식회사",
+  "신찬규",
+  "성공자원",
+  "정도자원",
+  "서명희",
+  "김현석",
+  "김성우",
+  "조남섭",
+  "전춘복",
+  "하남자원",
+  "이용문",
+  "스틸박",
+  "윤용인",
+  "방영섭",
+  "왕터재활용",
+  "춘천폐차장",
+  "대명자원",
+  "김기봉",
+  "박보람",
+  "정현팔",
+  "포천자원",
+  "성산자원",
+  "이판재",
+  "김해영",
+  "양구폐차장",
+  "박기준",
+  "형제자원",
+  "조갑순",
+  "대원리싸이클링",
+  "김희윤",
+  "고물나라",
+  "춘천호국자원",
+  "강원폐차산업",
+  "유근수",
+  "박종일",
+  "㈜백만",
+  "김진용",
+  "백형조",
+  "이석근",
+  "유림자원",
+  "한영희",
+  "김옥희",
+  "부성자원",
+  "가족자원",
+  "김만식",
+  "이정배",
+  "최성일",
+  "이레자원",
+  "유인상",
+  "나영철",
+  "방창희",
+  "방광복",
+  "최금석",
+  "염시건",
+  "박선숙",
+  "현대고물상",
+  "박준규",
+  "동면자원",
+  "이종자",
+  "산천어인테리어",
+  "김상일",
+  "길상자원",
+  "정형구",
+  "후평고물상",
+  "박진우",
+  "은혜철거자원",
+  "홍경희",
+  "변상일",
+  "신영근",
+  "장영환",
+  "이명섭",
+  "오해남",
+  "영서자원",
+  "동산고물상",
+  "제일무역",
+  "김지욱",
+  "염정식",
+  "김시안",
+  "신은이",
+  "이기원",
+  "김효순",
+  "이승일",
+  "광명자원",
+  "김기호",
+  "남광토건주식회사",
+  "이창모",
+  "김금수",
+  "허경희",
+  "인제자동차해체재활용산업",
+  "박영선",
+  "최상용",
+  "장호점",
+  "김종영",
+  "류창열",
+  "박진수",
+  "한마음자원",
+  "대신 리사이클링",
+  "송태욱",
+  "이남용",
+  "구미영",
+  "박병두",
+  "황동신",
+  "세종자원",
+  "주식회사 서온개발",
+  "이철균",
+  "여명구",
+  "홍남기",
+  "경규성",
+  "김희정",
+  "농업회사법인 주식회사 금돈",
+  "거목철강",
+  "유상옥",
+  "김현규",
+  "이창준",
+  "김창훈",
+  "최금호",
+  "(주)씨엔철강",
+  "정창섭",
+  "천지상사",
+  "한상호",
+  "이봉주",
+  "문선미",
+  "종합자원",
+  "김은경",
+  "박종민",
+  "박필서",
+  "엘린 company",
+  "김순기",
+  "김용현",
+  "삼일자원",
+  "홍현기",
+  "김성길",
+  "신정선",
+  "김영조",
+  "이옥철",
+  "유석희",
+  "우리자원(한기자)",
+  "김정남",
+  "박래완",
+  "허미향",
+  "대진자원",
+  "황대중",
+  "메탈링크",
+  "우수형",
+  "배근철",
+  "홍성환",
+  "김희산",
+  "서원상사",
+  "이기석",
+  "이원철",
+  "나누리자원",
+  "이흥근",
+  "고동근",
+  "이영숙",
+  "유건재",
+  "최대환",
+  "동산자원",
+  "이동근",
+  "장용길",
+  "다모아자원",
+  "김광웅",
+  "유재봉",
+  "신동환",
+  "강원지역재활용센터",
+  "연우무역주식회사",
+  "김동관",
+  "강원철강",
+  "권혁만",
+  "하금남",
+  "기은숙",
+  "최성순",
+  "송을용",
+  "지영차",
+  "한상우",
+  "이성수",
+  "세진자원",
+  "조남덕",
+  "청사자원",
+  "우리자원",
+  "최기성",
+  "박원묵",
+  "정재훈",
+  "백준호",
+  "김관식",
+  "엘린컴퍼니",
+  "박성재",
+  "최상진",
+  "경성케미칼",
+  "박종우",
+  "황석윤",
+  "정재호",
+  "박성용",
+  "다남자원",
+  "㈜상진철강",
+  "우주자원",
+  "최용일",
+  "씨엔철강",
+  "박복중",
+  "석사만물",
+  "용호강업",
+  "홍재영",
+  "대승인테리어",
+  "강원비철",
+  "금천고물상",
+  "제일자원",
+  "창촌고물상",
+  "형제재활용센타",
+  "제이알기업",
+  "부창자원",
+  "백응칠",
+  "엘린",
+  "진자원",
+  "춘천자원",
+  "에스엠아이",
+  "일흥이앤아이",
+  "손은숙",
+  "영서집게차",
+  "춘천고물상",
+  "박영철",
+  "형제고물상",
+  "천하자원",
+  "태학자원",
+  "정석철강",
+  "성일고물상",
+  "일호자원",
+  "대룡철거자원",
+  "현대철재",
+  "한스타",
+  "화성자원",
+  "뉴평화자원",
+  "우성고물상",
+  "박길현",
+  "유재석",
+  "차혁진",
+  "삼성ST",
+  "강토자원",
+  "월드엔지니어링",
+  "천지",
+  "진선자원",
+  "피엔엠",
+  "하나건설",
+  "크립토파라다이스"
+];
+
+// ── 상태 ──────────────────────────────────────────────────
+let data = [];  // rebuildData()에서 원본+조정내역으로 초기화됨
+let currentCategory = '전체';
+let searchQuery = '';
+let currentUnit = 'ton';
+let calcMode = 'heavy';
+let dkTierMode = 'general'; // 'general' = 하치장 등급, 'premium' = 우수·육성 등급
+let poscoDest = 'p'; // 'p' = 포항, 'g' = 광양 (경량/압축 모드에서 납품처 선택)
+let truckSize = 20;
+let includeStayCost = false;
+let selectedTrendItem = '생철A';
+let showFreight = true;  // 운임 포함 여부
+let lastCalcProduct = null;
+let lastCalcRecord = null;
+
+// ── 단가 조정 (공지 문자 자동 반영) ─────────────────────────
+const LS_KEY_ADJUST_LOG = 'dangapyo-price-log';
+const LS_KEY_ADJUST_PENDING = 'dangapyo-price-pending';
+const LS_KEY_QUICK_ADJUST = 'dangapyo-quick-adjust';
+const BASE_DATE_FALLBACK = '6/15';
+
+// ── 업체 설정 (포스코·동국) +5/-5원 누적 버튼 ─────────────────
+let quickAdjustCompany = 'posco'; // 'posco' | 'dk'
+function getQuickAdjust() {
+  try { return Object.assign({posco:0, dk:0}, JSON.parse(localStorage.getItem(LS_KEY_QUICK_ADJUST) || '{}')); }
+  catch { return {posco:0, dk:0}; }
+}
+function setQuickAdjust(obj) { localStorage.setItem(LS_KEY_QUICK_ADJUST, JSON.stringify(obj)); }
+
+function setQuickAdjustCompany(company, btn) {
+  quickAdjustCompany = company;
+  document.getElementById('qa-btn-posco').classList.toggle('active', company === 'posco');
+  document.getElementById('qa-btn-dk').classList.toggle('active', company === 'dk');
+  document.getElementById('qa-company-label').textContent = company === 'posco' ? '포스코' : '동국제강';
+  renderQuickAdjustPanel();
+}
+
+function adjustQuickCompany(delta) {
+  const qa = getQuickAdjust();
+  qa[quickAdjustCompany] = (qa[quickAdjustCompany] || 0) + delta;
+  setQuickAdjust(qa);
+  rebuildData();
+  renderList(); initCalcSelect(); updateCalc(); renderEditSections();
+  renderQuickAdjustPanel();
+  const label = quickAdjustCompany === 'posco' ? '포스코' : '동국제강';
+  const total = qa[quickAdjustCompany];
+  showToast(`${label} 누적 ${total >= 0 ? '+' : ''}${total}원 적용됨`);
+}
+
+function resetQuickAdjustCompany() {
+  const qa = getQuickAdjust();
+  qa[quickAdjustCompany] = 0;
+  setQuickAdjust(qa);
+  rebuildData();
+  renderList(); initCalcSelect(); updateCalc(); renderEditSections();
+  renderQuickAdjustPanel();
+  showToast(`${quickAdjustCompany === 'posco' ? '포스코' : '동국제강'} 조정 초기화 완료`);
+}
+
+function renderQuickAdjustPanel() {
+  const qa = getQuickAdjust();
+  const val = qa[quickAdjustCompany] || 0;
+  const label = document.getElementById('qa-total-label');
+  if (label) label.textContent = (val > 0 ? '+' : '') + val.toLocaleString();
+}
+
+const ADJUST_FIELD_PRESETS = [
+  {value:'posco_gp', label:'포스코 광양+포항', fields:['posco_g','posco_p']},
+  {value:'posco_g', label:'포스코 광양만', fields:['posco_g']},
+  {value:'posco_p', label:'포스코 포항만', fields:['posco_p']},
+  {value:'dk_u', label:'동국 유통도착', fields:['dk_u']},
+  {value:'dk_contract', label:'동국 계약(3)', fields:['dk_contract']},
+  {value:'dk_add', label:'동국 하치장추가(2)', fields:['dk_add']},
+  {value:'dk_freight_s', label:'동국 운임지원(4)', fields:['dk_freight_s']},
+  {value:'bs_al', label:'보성 도착+상차', fields:['bs_a','bs_l']},
+  {value:'bs_a', label:'보성 도착만', fields:['bs_a']},
+  {value:'bs_l', label:'보성 상차만', fields:['bs_l']},
+];
+const ADJUST_CAT_OPTIONS = ['전체','생철','중량','경량','압축','선반','길로틴','슈레더'];
+const ADJUST_INCREASE_WORDS = ['인상','추가','올림','인상함'];
+const ADJUST_DECREASE_WORDS = ['인하','차감','감액','삭감','내림'];
+
+function getAdjustLog() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY_ADJUST_LOG) || '[]'); }
+  catch { return []; }
+}
+function setAdjustLog(list) { localStorage.setItem(LS_KEY_ADJUST_LOG, JSON.stringify(list)); }
+function getPendingQueue() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY_ADJUST_PENDING) || '[]'); }
+  catch { return []; }
+}
+function setPendingQueue(list) { localStorage.setItem(LS_KEY_ADJUST_PENDING, JSON.stringify(list)); }
+
+function todayISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function formatMD(iso) {
+  if (!iso) return '';
+  const parts = iso.split('-');
+  if (parts.length < 3) return iso;
+  return `${parseInt(parts[1],10)}/${parseInt(parts[2],10)}`;
+}
+function presetFields(value) {
+  const preset = ADJUST_FIELD_PRESETS.find(p => p.value === value);
+  return preset ? preset.fields : [];
+}
+
+function applyRulesToData(dataArr, rules) {
+  (rules || []).forEach(rule => {
+    const fields = rule.fields || presetFields(rule.fieldPreset);
+    dataArr.forEach(item => {
+      if (rule.catFilter && rule.catFilter !== '전체' && item.cat !== rule.catFilter) return;
+      fields.forEach(f => {
+        if (item[f] !== null && item[f] !== undefined) item[f] = item[f] + rule.delta;
+      });
+    });
+  });
+}
+
+function rebuildData() {
+  const today = todayISO();
+  const pending = getPendingQueue();
+  let log = getAdjustLog();
+  const stillPending = [];
+  let anyApplied = false;
+  pending.forEach(item => {
+    if (item.effectiveDate && item.effectiveDate <= today) {
+      log.push({...item, appliedAt: new Date().toLocaleString('ko-KR')});
+      anyApplied = true;
+    } else {
+      stillPending.push(item);
+    }
+  });
+  if (anyApplied) {
+    setPendingQueue(stillPending);
+    setAdjustLog(log);
+  }
+
+  data = JSON.parse(JSON.stringify(ORIGINAL_DATA));
+  log.forEach(entry => applyRulesToData(data, entry.rules));
+
+  const qa = getQuickAdjust();
+  if (qa.posco) {
+    data.forEach(item => {
+      if (item.posco_g !== null && item.posco_g !== undefined) item.posco_g += qa.posco;
+      if (item.posco_p !== null && item.posco_p !== undefined) item.posco_p += qa.posco;
+    });
+  }
+  if (qa.dk) {
+    data.forEach(item => {
+      if (item.dk_u !== null && item.dk_u !== undefined) item.dk_u += qa.dk;
+    });
+  }
+
+  const lastEntry = log.length ? log.reduce((a,b) => (a.effectiveDate > b.effectiveDate ? a : b)) : null;
+  const label = document.getElementById('base-date-label');
+  if (label) label.textContent = (lastEntry ? formatMD(lastEntry.effectiveDate) : BASE_DATE_FALLBACK) + ' 기준';
+
+  if (anyApplied) showToast('예약된 단가 조정이 자동 적용되었습니다');
+  return anyApplied;
+}
+
+function detectGlobalDirection(text) {
+  for (const w of ADJUST_INCREASE_WORDS) if (text.includes(w)) return 1;
+  for (const w of ADJUST_DECREASE_WORDS) if (text.includes(w)) return -1;
+  return null;
+}
+
+function detectFieldPreset(text) {
+  if (text.includes('계약')) return 'dk_contract';
+  if (text.includes('운임지원') || text.includes('운임보조')) return 'dk_freight_s';
+  if (text.includes('하치장')) return 'dk_add';
+  const hasGwangyang = text.includes('광양');
+  const hasPohang = text.includes('포항');
+  if (hasGwangyang && !hasPohang) return 'posco_g';
+  if (hasPohang && !hasGwangyang) return 'posco_p';
+  if (text.includes('포스코')) return 'posco_gp';
+  if (text.includes('동국')) return 'dk_u';
+  if (text.includes('보성')) {
+    const hasArrive = text.includes('도착');
+    const hasLoad = text.includes('상차');
+    if (hasArrive && !hasLoad) return 'bs_a';
+    if (hasLoad && !hasArrive) return 'bs_l';
+    return 'bs_al';
+  }
+  return '';
+}
+
+function detectEffectiveDate(text) {
+  let year = new Date().getFullYear();
+  const yearMatch = text.match(/(\d{2,4})\s*년/);
+  if (yearMatch) {
+    let y = parseInt(yearMatch[1], 10);
+    if (y < 100) y += 2000;
+    year = y;
+  }
+  const mdMatch = text.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
+  if (mdMatch) {
+    const m = String(parseInt(mdMatch[1],10)).padStart(2,'0');
+    const d = String(parseInt(mdMatch[2],10)).padStart(2,'0');
+    return `${year}-${m}-${d}`;
+  }
+  const slashMatch = text.match(/(\d{1,2})\s*\/\s*(\d{1,2})(?!\s*(?:t|톤|kg))/i);
+  if (slashMatch) {
+    const m = String(parseInt(slashMatch[1],10)).padStart(2,'0');
+    const d = String(parseInt(slashMatch[2],10)).padStart(2,'0');
+    return `${year}-${m}-${d}`;
+  }
+  return '';
+}
+
+function extractRules(text) {
+  const globalDir = detectGlobalDirection(text);
+  const globalPreset = detectFieldPreset(text);
+  const matches = [];
+  const catRe = /(생철|중량|경량|압축|선반|길로틴|슈레더)\s*류?\s*[:\-]?\s*(\d+)\s*원/g;
+  let m;
+  while ((m = catRe.exec(text)) !== null) matches.push({cat: m[1], amount: parseInt(m[2],10), index: m.index, len: m[0].length});
+  const allRe = /(전\s*품목|전체|전\s*등급)\s*[:\-]?\s*(\d+)\s*원/g;
+  while ((m = allRe.exec(text)) !== null) matches.push({cat: '전체', amount: parseInt(m[2],10), index: m.index, len: m[0].length});
+  matches.sort((a,b) => a.index - b.index);
+  if (!matches.length) {
+    const bareRe = /(\d+)\s*원/g;
+    while ((m = bareRe.exec(text)) !== null) matches.push({cat: '전체', amount: parseInt(m[1],10), index: m.index, len: m[0].length});
+  }
+  const rules = matches.map((mt, i) => {
+    const searchStart = mt.index + mt.len;
+    const searchEnd = i + 1 < matches.length ? matches[i+1].index : Math.min(text.length, searchStart + 15);
+    const win = text.slice(searchStart, searchEnd);
+    let dir = globalDir;
+    for (const w of ADJUST_INCREASE_WORDS) if (win.includes(w)) { dir = 1; break; }
+    for (const w of ADJUST_DECREASE_WORDS) if (win.includes(w)) { dir = -1; break; }
+    return { catFilter: mt.cat, fieldPreset: globalPreset, delta: (dir === null ? 1 : dir) * mt.amount };
+  });
+  const dedup = {};
+  rules.forEach(r => { dedup[r.catFilter] = r; });
+  return Object.values(dedup);
+}
+
+let adjustPreviewRules = [];
+let adjustRuleSeq = 0;
+
+function parseAdjustmentText() {
+  const raw = document.getElementById('adjust-input').value.trim();
+  if (!raw) { showToast('공지 문자 내용을 입력해주세요'); return; }
+  const rules = extractRules(raw);
+  const effectiveDate = detectEffectiveDate(raw);
+  adjustPreviewRules = rules.length
+    ? rules.map(r => ({...r, _id: ++adjustRuleSeq}))
+    : [{catFilter:'전체', fieldPreset:'', delta:0, _id: ++adjustRuleSeq}];
+  renderAdjustPreview(effectiveDate, raw.split('\n')[0].slice(0,40));
+  if (!rules.length) showToast('자동 인식 실패 — 항목을 직접 선택해주세요');
+}
+
+function addAdjustRuleRow() {
+  adjustPreviewRules.push({catFilter:'전체', fieldPreset:'', delta:0, _id: ++adjustRuleSeq});
+  renderAdjustPreview(document.getElementById('adjust-date')?.value || '', document.getElementById('adjust-desc')?.value || '');
+}
+function removeAdjustRuleRow(id) {
+  adjustPreviewRules = adjustPreviewRules.filter(r => r._id !== id);
+  renderAdjustPreview(document.getElementById('adjust-date')?.value || '', document.getElementById('adjust-desc')?.value || '');
+}
+
+function renderAdjustPreview(effectiveDate, description) {
+  const wrap = document.getElementById('adjust-preview');
+  if (!wrap) return;
+  if (!adjustPreviewRules.length) { wrap.innerHTML = ''; return; }
+  const rows = adjustPreviewRules.map(r => `
+    <div class="edit-row" data-rule-id="${r._id}" style="flex-wrap:wrap;">
+      <select class="calc-select" style="flex:1;min-width:70px;" data-role="cat">
+        ${ADJUST_CAT_OPTIONS.map(c => `<option value="${c}" ${r.catFilter===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+      <select class="calc-select" style="flex:2;min-width:120px;" data-role="field">
+        <option value="">항목 선택</option>
+        ${ADJUST_FIELD_PRESETS.map(p => `<option value="${p.value}" ${r.fieldPreset===p.value?'selected':''}>${p.label}</option>`).join('')}
+      </select>
+      <select class="calc-select" style="flex:1;min-width:64px;" data-role="dir">
+        <option value="1" ${r.delta>=0?'selected':''}>인상 +</option>
+        <option value="-1" ${r.delta<0?'selected':''}>인하 -</option>
+      </select>
+      <input class="calc-input" type="number" style="flex:1;min-width:60px;" data-role="amount" value="${Math.abs(r.delta)}">
+      <button class="stepper-btn" type="button" style="flex:0 0 36px;" onclick="removeAdjustRuleRow(${r._id})">×</button>
+    </div>`).join('');
+  wrap.innerHTML = `
+    <div class="field" style="margin-top:10px;">
+      <label>적용 대상 요약</label>
+      <input class="calc-input" id="adjust-desc" type="text" value="${(description||'').replace(/"/g,'&quot;')}" placeholder="예: 동국제강 인천 전체 인하">
+    </div>
+    ${rows}
+    <button class="freight-table-toggle" type="button" onclick="addAdjustRuleRow()">+ 항목 추가</button>
+    <div class="field" style="margin-top:10px;">
+      <label>시행일 <small>비워두면 즉시 적용</small></label>
+      <input class="calc-input" id="adjust-date" type="date" value="${effectiveDate||''}" oninput="updateAdjustActionLabel()">
+    </div>
+    <button class="save-btn" style="margin-bottom:0;" id="adjust-apply-btn" onclick="confirmApplyAdjustment()">적용하기</button>
+  `;
+  updateAdjustActionLabel();
+}
+
+function updateAdjustActionLabel() {
+  const btn = document.getElementById('adjust-apply-btn');
+  const dateInput = document.getElementById('adjust-date');
+  if (!btn || !dateInput) return;
+  const val = dateInput.value;
+  const isFuture = val && val > todayISO();
+  btn.textContent = isFuture ? `📅 ${formatMD(val)} 예약 등록` : '✅ 지금 바로 적용';
+}
+
+function collectRulesFromPreviewDOM() {
+  const rows = document.querySelectorAll('#adjust-preview .edit-row');
+  const rules = [];
+  rows.forEach(row => {
+    const cat = row.querySelector('[data-role="cat"]').value;
+    const preset = row.querySelector('[data-role="field"]').value;
+    const dir = parseInt(row.querySelector('[data-role="dir"]').value, 10);
+    const amount = parseFloat(row.querySelector('[data-role="amount"]').value) || 0;
+    if (!preset || !amount) return;
+    rules.push({catFilter: cat, fieldPreset: preset, fields: presetFields(preset), delta: dir * amount});
+  });
+  return rules;
+}
+
+function confirmApplyAdjustment() {
+  const rules = collectRulesFromPreviewDOM();
+  if (!rules.length) { showToast('항목과 금액을 확인해주세요'); return; }
+  const dateInput = document.getElementById('adjust-date');
+  const date = dateInput?.value || todayISO();
+  const description = document.getElementById('adjust-desc')?.value.trim() || '단가 조정';
+  const entry = { id: Date.now(), effectiveDate: date, description, rules, registeredAt: new Date().toLocaleString('ko-KR') };
+  if (date > todayISO()) {
+    const pending = getPendingQueue();
+    pending.push(entry);
+    setPendingQueue(pending);
+    showToast(`${formatMD(date)}에 자동 적용되도록 예약했습니다`);
+  } else {
+    const log = getAdjustLog();
+    log.push({...entry, appliedAt: new Date().toLocaleString('ko-KR')});
+    setAdjustLog(log);
+    rebuildData();
+    renderList(); initCalcSelect(); updateCalc(); renderEditSections();
+    showToast('단가 조정이 적용되었습니다');
+  }
+  document.getElementById('adjust-input').value = '';
+  adjustPreviewRules = [];
+  document.getElementById('adjust-preview').innerHTML = '';
+  renderPendingPanel();
+  renderAdjustLogPanel();
+}
+
+function renderPendingPanel() {
+  const section = document.getElementById('pending-section');
+  const list = document.getElementById('pending-list');
+  if (!section || !list) return;
+  const pending = getPendingQueue().slice().sort((a,b) => a.effectiveDate.localeCompare(b.effectiveDate));
+  section.style.display = pending.length ? 'block' : 'none';
+  list.innerHTML = pending.map(p => `
+    <div class="edit-row">
+      <div class="edit-row-label">${p.description}<br><span style="font-size:11px;color:var(--sub);">${formatMD(p.effectiveDate)} 시행 예정</span></div>
+      <button class="small-btn primary" style="flex:0 0 auto;padding:8px 10px;" onclick="applyPendingNow(${p.id})">지금 적용</button>
+      <button class="small-btn danger" style="flex:0 0 auto;padding:8px 10px;" onclick="removePendingItem(${p.id})">삭제</button>
+    </div>`).join('');
+}
+
+function applyPendingNow(id) {
+  const pending = getPendingQueue();
+  const item = pending.find(p => p.id === id);
+  if (!item) return;
+  setPendingQueue(pending.filter(p => p.id !== id));
+  const log = getAdjustLog();
+  log.push({...item, appliedAt: new Date().toLocaleString('ko-KR')});
+  setAdjustLog(log);
+  rebuildData();
+  renderList(); initCalcSelect(); updateCalc(); renderEditSections();
+  renderPendingPanel(); renderAdjustLogPanel();
+  showToast('예약 조정을 지금 적용했습니다');
+}
+
+function removePendingItem(id) {
+  setPendingQueue(getPendingQueue().filter(p => p.id !== id));
+  renderPendingPanel();
+  showToast('예약 삭제 완료');
+}
+
+function renderAdjustLogPanel() {
+  const section = document.getElementById('log-section');
+  const list = document.getElementById('adjust-log-list');
+  if (!section || !list) return;
+  const log = getAdjustLog().slice().sort((a,b) => (b.appliedAt||'').localeCompare(a.appliedAt||''));
+  section.style.display = log.length ? 'block' : 'none';
+  list.innerHTML = log.slice(0,20).map(l => `
+    <div class="edit-row">
+      <div class="edit-row-label">${l.description}<br><span style="font-size:11px;color:var(--sub);">${formatMD(l.effectiveDate)} 시행 · ${l.appliedAt||''}</span></div>
+      <button class="small-btn danger" style="flex:0 0 auto;padding:8px 10px;" onclick="undoAdjustLogEntry(${l.id})">되돌리기</button>
+    </div>`).join('');
+}
+
+function undoAdjustLogEntry(id) {
+  setAdjustLog(getAdjustLog().filter(l => l.id !== id));
+  rebuildData();
+  renderList(); initCalcSelect(); updateCalc(); renderEditSections();
+  renderAdjustLogPanel();
+  showToast('해당 조정을 되돌렸습니다');
+}
+
+// ── 초기화 ────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('today-date').textContent = new Date().toLocaleDateString('ko-KR', {month:'long',day:'numeric'});
+  rebuildData();
+  initChips();
+  renderList();
+  initCalcSelect();
+  updateCalc();
+  initTrendSelector();
+  initHistoryTable();
+  renderTrendChart();
+  renderEditSections();
+  renderCompanyRecords();
+  renderPendingPanel();
+  renderAdjustLogPanel();
+  renderQuickAdjustPanel();
+});
+
+// ── 카테고리 칩 ───────────────────────────────────────────
+function initChips() {
+  const cats = ['전체','생철','중량','경량','압축','선반','길로틴','슈레더'];
+  const wrap = document.getElementById('chips-wrap');
+  wrap.innerHTML = '';
+  cats.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'chip' + (c === currentCategory ? ' active' : '');
+    btn.textContent = c;
+    btn.onclick = () => { currentCategory = c; initChips(); renderList(); };
+    wrap.appendChild(btn);
+  });
+}
+
+// ── 검색 ─────────────────────────────────────────────────
+const searchInput = document.getElementById('search-input');
+const clearBtn = document.getElementById('clear-btn');
+searchInput.addEventListener('input', e => {
+  searchQuery = e.target.value;
+  clearBtn.style.display = searchQuery ? 'block' : 'none';
+  renderList();
+});
+clearBtn.addEventListener('click', () => {
+  searchQuery = '';
+  searchInput.value = '';
+  clearBtn.style.display = 'none';
+  renderList();
+});
+
+// ── 제품 목록 렌더 ────────────────────────────────────────
+function renderList() {
+  const container = document.getElementById('product-list');
+  const filtered = data.filter(d => {
+    const catOk = currentCategory === '전체' || d.cat === currentCategory;
+    const searchOk = !searchQuery || d.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return catOk && searchOk;
+  });
+  if (!filtered.length) {
+    container.innerHTML = '<div class="empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><p>검색 결과가 없습니다</p></div>';
+    return;
+  }
+  container.innerHTML = filtered.map(d => buildCard(d)).join('');
+  // Toggle accordion
+  container.querySelectorAll('.product-card-header').forEach(h => {
+    h.onclick = () => h.closest('.product-card').classList.toggle('open');
+  });
+}
+
+function pv(v, suffix='') {
+  if (v === null || v === undefined) return '<span class="null-val">-</span>';
+  return `<strong>${v.toLocaleString()}</strong>${suffix}`;
+}
+
+function ap(base, freight) {
+  // 운임 공제: 받는 단가 - 내야 할 운임
+  if (!base) return null;
+  return showFreight ? base - freight : base;
+}
+function priceLine(base, freight) {
+  // 카드 서브텍스트: "단가 XXX - 운임 XX = XXX" 또는 "단가 XXX"
+  if (!base) return '-';
+  if (showFreight) return `${base} - ${freight} = <b>${base - freight}</b>`;
+  return base.toLocaleString();
+}
+
+function poscoIncentiveForList(d) {
+  return ['생철압축','압축A','압축AB','압축B','압축P'].includes(d.name) ? 15 : 0;
+}
+
+function dongkukBaseForList(d) {
+  // "기본" 표시값 = 기본단가 + 일반계약(20원, 전업체 공통)
+  if (d.dk_u === null || d.dk_u === undefined) return null;
+  return d.dk_u + DK_POLICY_DEFAULT.contract;
+}
+
+function dongkukIncentiveForList(d) {
+  // 단가표 탭 요약: 하치장 등급 · 춘천(기본 운임보조) 기준. "기본"에 일반계약이 이미 포함되므로
+  // 여기서는 구좌하치장 + 운임보조만 더함.
+  if (d.dk_u === null || d.dk_u === undefined) return 0;
+  const yard = (d.cat === '길로틴') ? DK_POLICY_DEFAULT.yardGuillotine : DK_POLICY_DEFAULT.yard;
+  const freight = (DK_FREIGHT_REGIONS.find(r => r.name === DK_POLICY_DEFAULT.homeRegion) || {}).amount || 0;
+  return yard + freight;
+}
+
+function priceWithIncentive(base, incentive = 0) {
+  if (base === null || base === undefined) return '<span class="null-val">-</span>';
+  const total = base + incentive;
+  const baseText = incentive ? `<span class="price-base">기본 ${base.toLocaleString()}</span>` : '';
+  return `<span class="price-main">${total.toLocaleString()}</span>${baseText}`;
+}
+
+function buildCard(d) {
+  // 단가표: 원가 그대로 표시 (운임 미적용)
+  const sv = n => n ? n.toLocaleString() : '-';
+  const poscoInc = poscoIncentiveForList(d);
+  const dkBase = dongkukBaseForList(d);
+  const dkInc = dongkukIncentiveForList(d);
+
+  return `
+  <div class="product-card">
+    <div class="product-card-header">
+      <div class="product-name">${d.name}</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="category-badge cat-${d.cat}">${d.cat}</span>
+        <span class="chevron">▼</span>
+      </div>
+    </div>
+    <div class="summary-row">
+      <div class="summary-item">
+        <div class="s-label" style="color:var(--posco)">포스코 포항</div>
+        <div class="s-val">${priceWithIncentive(d.posco_p, poscoInc)}</div>
+      </div>
+      <div class="summary-item">
+        <div class="s-label" style="color:var(--posco)">포스코 광양</div>
+        <div class="s-val">${priceWithIncentive(d.posco_g, poscoInc)}</div>
+      </div>
+      <div class="summary-item">
+        <div class="s-label" style="color:var(--dongkuk)">동국 도착(하치장)</div>
+        <div class="s-val">${priceWithIncentive(dkBase, dkInc)}</div>
+      </div>
+      <div class="summary-item">
+        <div class="s-label" style="color:var(--bosong)">보성 도착</div>
+        <div class="s-val">${priceWithIncentive(d.bs_a, 0)}</div>
+      </div>
+    </div>
+    <div class="price-grid">
+      <div class="price-box posco">
+        <div class="supplier">포스코</div>
+        <div class="loc">포항</div>
+        ${priceWithIncentive(d.posco_p, poscoInc)}
+      </div>
+      <div class="price-box posco">
+        <div class="supplier">포스코</div>
+        <div class="loc">광양</div>
+        ${priceWithIncentive(d.posco_g, poscoInc)}
+      </div>
+      <div class="price-box dongkuk">
+        <div class="supplier">동국제강</div>
+        <div class="loc">하치장 도착</div>
+        ${priceWithIncentive(dkBase, dkInc)}
+      </div>
+      <div class="price-box bosong">
+        <div class="supplier">보성매입</div>
+        <div class="loc">도착</div>
+        ${priceWithIncentive(d.bs_a, 0)}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── 계산기 ────────────────────────────────────────────────
+function calcDkTotal(d) {
+  if (d.dk_total) return d.dk_total;
+  if (!d.dk_u) return null;
+  return d.dk_u + (d.dk_add || 0) + (d.dk_contract != null ? d.dk_contract : 0) + (d.dk_freight_s || 0);
+}
+
+function getCalcProducts() {
+  if (calcMode === 'heavy') {
+    const names = ['생철B','중량AS','중량A','중량B','중량BLS(철말)','중량ALC','중량BLC'];
+    return names.map(n => data.find(d => d.name === n)).filter(Boolean);
+  }
+  const names = ['압축AB','압축A','압축B','압축P','생철압축'];
+  return names.map(n => data.find(d => d.name === n)).filter(Boolean);
+}
+
+function initCalcSelect() {
+  const sel = document.getElementById('calc-product');
+  sel.innerHTML = data.map(d => `<option value="${d.name}">${d.name} (${d.cat})</option>`).join('');
+  const reg = document.getElementById('calc-region');
+  reg.innerHTML = '<option value="">경유운임 없음</option>' +
+    REGION_DATA.map(r => `<option value="${r.name}">${r.name}${r.note?' ('+r.note+')':''}</option>`).join('');
+  initDkFreightRegionSelect();
+  const defaultItem = data.find(d => d.name === '중량A') || getCalcProducts()[0];
+  if (defaultItem) sel.value = defaultItem.name;
+  document.getElementById('incent-card-compress').style.display = calcMode === 'heavy' ? 'none' : '';
+  document.getElementById('incent-card-dk').style.display = calcMode === 'heavy' ? '' : 'none';
+  document.getElementById('incent-card-heading').textContent = calcMode === 'heavy' ? '④ 동국제강 정책단가 (원/kg)' : '④ 인센티브 (원/kg)';
+  applyModeDefaults(calcMode, false);
+  if (calcMode === 'heavy' && defaultItem) applyDkYardDefault(defaultItem.name);
+  document.getElementById('tab-calc').classList.toggle('heavy', calcMode === 'heavy');
+  renderGradeButtons();
+}
+
+function renderGradeButtons() {
+  const wrap = document.getElementById('grade-buttons');
+  if (!wrap) return;
+  const current = document.getElementById('calc-product').value;
+  wrap.innerHTML = getCalcProducts().map(d =>
+    `<button class="grade-btn${d.name === current ? ' active' : ''}" type="button" onclick="selectCalcProduct('${d.name}')">${d.name}</button>`
+  ).join('');
+}
+
+function selectCalcProduct(name) {
+  document.getElementById('calc-product').value = name;
+  renderGradeButtons();
+  if (calcMode === 'heavy') applyDkYardDefault(name);
+  updateCalc();
+}
+
+function selectPoscoDest(dest) {
+  poscoDest = dest;
+  updateCalc();
+}
+
+function applyDkYardDefault(name) {
+  const d = data.find(p => p.name === name);
+  const yardEl = document.getElementById('dk-yard');
+  if (!d || !yardEl) return;
+  yardEl.value = (d.cat === '길로틴') ? DK_POLICY_DEFAULT.yardGuillotine : DK_POLICY_DEFAULT.yard;
+}
+
+function setCalcMode(mode) {
+  calcMode = mode;
+  document.getElementById('mode-compress').classList.toggle('active', mode === 'compress');
+  document.getElementById('mode-heavy').classList.toggle('active', mode === 'heavy');
+  document.getElementById('tab-calc').classList.toggle('heavy', mode === 'heavy');
+  document.getElementById('incent-card-compress').style.display = mode === 'heavy' ? 'none' : '';
+  document.getElementById('incent-card-dk').style.display = mode === 'heavy' ? '' : 'none';
+  document.getElementById('incent-card-heading').textContent = mode === 'heavy' ? '④ 동국제강 정책단가 (원/kg)' : '④ 인센티브 (원/kg)';
+  applyModeDefaults(mode, true);
+  const defaultName = mode === 'heavy' ? '중량A' : '압축AB';
+  const fallback = getCalcProducts()[0];
+  const finalName = data.find(d => d.name === defaultName)?.name || fallback?.name || '';
+  document.getElementById('calc-product').value = finalName;
+  if (mode === 'heavy') applyDkYardDefault(finalName);
+  renderGradeButtons();
+  updateCalc();
+}
+
+function applyModeDefaults(mode, overwriteValues=false) {
+  document.getElementById('freight-label').textContent = mode === 'heavy' ? '운반비' : '운임';
+  if (overwriteValues) {
+    poscoDest = 'p';
+    if (mode === 'heavy') {
+      setDkTierMode('general', document.getElementById('dktier-btn-general'));
+      document.getElementById('dk-contract').value = DK_POLICY_DEFAULT.contract;
+      document.getElementById('dk-premium').value = DK_POLICY_DEFAULT.premium;
+      document.getElementById('dk-temp').value = DK_POLICY_DEFAULT.temp;
+      document.getElementById('dk-freight-region').value = DK_POLICY_DEFAULT.homeRegion;
+    } else {
+      document.getElementById('incent-company').value = 1;
+      document.getElementById('incent-mou').value = 10;
+      document.getElementById('incent-mou-extra').value = 2;
+      document.getElementById('incent-quality').value = 2;
+    }
+    document.getElementById('calc-yard').value = mode === 'heavy' ? 20 : 40;
+    document.getElementById('purchase-price').value = quickMode === 'maxbuy' ? 20 : (mode === 'heavy' ? 300 : 450);
+    document.getElementById('calc-qty').value = mode === 'heavy' ? 50 : 80;
+    document.getElementById('calc-company').value = mode === 'heavy' ? '' : '신천구';
+    document.getElementById('calc-region').value = mode === 'heavy' ? '' : '양주';
+    document.getElementById('calc-vehicle-manual').value = '';
+    const memoEl = document.getElementById('calc-memo');
+    if (memoEl) memoEl.value = '';
+  }
+}
+
+function setDkTierMode(mode, btn) {
+  dkTierMode = mode;
+  document.getElementById('dktier-btn-general').classList.toggle('active', mode === 'general');
+  document.getElementById('dktier-btn-premium').classList.toggle('active', mode === 'premium');
+  document.getElementById('dk-field-yard').style.display = mode === 'general' ? '' : 'none';
+  document.getElementById('dk-field-premium').style.display = mode === 'premium' ? '' : 'none';
+  document.getElementById('dk-field-temp').style.display = mode === 'premium' ? '' : 'none';
+  updateCalc();
+}
+
+function initDkFreightRegionSelect() {
+  const sel = document.getElementById('dk-freight-region');
+  if (!sel) return;
+  sel.innerHTML = DK_FREIGHT_REGIONS.map(r => `<option value="${r.name}">${r.name} (+${r.amount}원)</option>`).join('');
+  sel.value = DK_POLICY_DEFAULT.homeRegion;
+}
+
+let quickMode = 'profit'; // 'profit' = 이익 계산, 'maxbuy' = 최대 매입가 역산
+function setQuickMode(mode, btn) {
+  quickMode = mode;
+  document.querySelectorAll('.quick-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const label = document.getElementById('purchase-price-label');
+  const input = document.getElementById('purchase-price');
+  if (label) label.textContent = mode === 'maxbuy' ? '목표 마진 (원/kg)' : '매입단가 (원/kg)';
+  if (input) {
+    if (mode === 'maxbuy') {
+      input.dataset.prevValue = input.value;
+      input.value = input.dataset.maxbuyValue || 20;
+      input.min = 0;
+      input.placeholder = '희망 마진 입력';
+    } else {
+      input.dataset.maxbuyValue = input.value;
+      input.value = input.dataset.prevValue || 300;
+      input.min = 300;
+      input.placeholder = '거래처 제시 가격';
+    }
+  }
+  updateCalc();
+}
+
+function toggleStayCost() {
+  includeStayCost = !includeStayCost;
+  const btn = document.getElementById('stay-toggle');
+  if (btn) btn.textContent = includeStayCost ? '숙박비 포함' : '숙박비 제외';
+  updateCalc();
+  renderFreightTable();
+}
+function toggleFreightTable() {
+  const wrap = document.getElementById('freight-table-wrap');
+  if (!wrap) return;
+  wrap.classList.toggle('open');
+  renderFreightTable();
+}
+
+function renderFreightTable() {
+  const table = document.getElementById('freight-table');
+  if (!table) return;
+  const rows = REGION_DATA.map(r => {
+    const applied = (r.fuel || 0) + (includeStayCost ? (r.stay || 0) : 0);
+    const perKg = truckSize > 0 ? applied / (truckSize * 1000) : 0;
+    return `<tr onclick="selectRegionFromTable('${r.name}')">
+      <td>${r.name}${r.note ? `<span class="region-note">${r.note}</span>` : ''}</td>
+      <td>${r.fuel.toLocaleString()}</td>
+      <td>${r.stay ? r.stay.toLocaleString() : '-'}</td>
+      <td><b>${applied.toLocaleString()}</b></td>
+      <td><b>${perKg.toFixed(1).replace('.0','')}</b></td>
+    </tr>`;
+  }).join('');
+  table.innerHTML = `<thead><tr><th>지역</th><th>경유</th><th>숙박</th><th>적용금액</th><th>${truckSize}t<br>원/kg</th></tr></thead><tbody>${rows}</tbody>`;
+}
+
+function selectRegionFromTable(name) {
+  document.getElementById('calc-region').value = name;
+  updateCalc();
+}
+function setTruckSize(size, btn) {
+  truckSize = size;
+  document.querySelectorAll('.vehicle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateCalc();
+}
+
+function syncYardCost() {
+  const c = parseFloat(document.getElementById('yard-compress')?.value) || 0;
+  const d = parseFloat(document.getElementById('yard-dust')?.value) || 0;
+  const l = parseFloat(document.getElementById('yard-labor')?.value) || 0;
+  const total = c + d + l;
+  const yard = document.getElementById('calc-yard');
+  if (yard) yard.value = total;
+  updateCalc();
+}
+
+function syncYardCostFromTotal() {
+  updateCalc();
+}
+
+function stepInput(id, delta, minValue = 0) {
+  const input = document.getElementById(id);
+  if (!input) return;
+  const min = (id === 'purchase-price' && quickMode === 'maxbuy') ? 0 : minValue;
+  const current = parseFloat(input.value) || min;
+  const next = Math.max(min, current + delta);
+  input.value = next;
+  updateCalc();
+}
+
+function setUnit(unit, btn) {
+  currentUnit = unit;
+  document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('active'));
+  btn?.classList.add('active');
+  updateCalc();
+}
+
+function updateCalc() {
+  const sel = document.getElementById('calc-product');
+  const name = sel.value;
+  const d = data.find(p => p.name === name);
+  if (!d) return;
+
+  const isPS = calcMode === 'compress';
+  const isDK = calcMode === 'heavy';
+  const qtyTon = parseFloat(document.getElementById('calc-qty').value) || 0;
+  const kg = qtyTon * 1000;
+  const inputVal = parseFloat(document.getElementById('purchase-price').value) || 0;
+  const yardCost = parseFloat(document.getElementById('calc-yard').value) || 0;
+
+  const regionName = document.getElementById('calc-region').value;
+  const region = REGION_DATA.find(r => r.name === regionName);
+  const manualVehicle = parseFloat(document.getElementById('calc-vehicle-manual').value);
+  const vehicleCost = !isNaN(manualVehicle) && manualVehicle > 0 ? manualVehicle : (region ? region.fuel + (includeStayCost ? region.stay : 0) : 0);
+  const vehiclePerKg = vehicleCost > 0 && truckSize > 0 ? vehicleCost / (truckSize * 1000) : 0;
+
+  let incentiveTotal = 0;
+  let dkFreightAmt = 0;
+  if (isDK) {
+    const dkContract = parseFloat(document.getElementById('dk-contract').value) || 0;
+    const dkFreightRegion = document.getElementById('dk-freight-region').value;
+    dkFreightAmt = (DK_FREIGHT_REGIONS.find(r => r.name === dkFreightRegion) || {}).amount || 0;
+    const tempActive = todayISO() <= DK_POLICY_DEFAULT.tempDeadline;
+    const dkTempInput = document.getElementById('dk-temp');
+    if (dkTempInput) dkTempInput.disabled = !tempActive;
+    if (dkTierMode === 'general') {
+      const dkYard = parseFloat(document.getElementById('dk-yard').value) || 0;
+      incentiveTotal = dkContract + dkYard + dkFreightAmt;
+    } else {
+      const dkPremium = parseFloat(document.getElementById('dk-premium').value) || 0;
+      const dkTemp = tempActive ? (parseFloat(dkTempInput?.value) || 0) : 0;
+      incentiveTotal = dkContract + dkPremium + dkTemp + dkFreightAmt;
+    }
+  } else {
+    const iCompany = parseFloat(document.getElementById('incent-company').value) || 0;
+    const iMou = parseFloat(document.getElementById('incent-mou').value) || 0;
+    const iMouExtra = parseFloat(document.getElementById('incent-mou-extra').value) || 0;
+    const iQuality = parseFloat(document.getElementById('incent-quality').value) || 0;
+    incentiveTotal = iCompany + iMou + iMouExtra + iQuality;
+  }
+  const appliedIncentive = incentiveTotal;
+  document.getElementById('incent-total-label').textContent = incentiveTotal.toLocaleString();
+
+  const dkTotalDisplay = (d.dk_u !== null && d.dk_u !== undefined) ? (d.dk_u + (isDK ? incentiveTotal : 0)) : null;
+  const poscoBaseForTotal = d.posco_p != null ? d.posco_p : (d.posco_g != null ? d.posco_g : null);
+  const poscoTotalDisplay = poscoBaseForTotal !== null ? (poscoBaseForTotal + (isPS ? incentiveTotal : 0)) : null;
+  const totalDkEl = document.getElementById('total-dk-label');
+  const totalPoscoEl = document.getElementById('total-posco-label');
+  if (totalDkEl) totalDkEl.textContent = dkTotalDisplay !== null ? dkTotalDisplay.toLocaleString() : '-';
+  if (totalPoscoEl) totalPoscoEl.textContent = poscoTotalDisplay !== null ? poscoTotalDisplay.toLocaleString() : '-';
+
+  let basePrice = 0;
+  let altPrice = null;
+  let deliveryLabel = '';
+  let altLabel = '';
+  let freight = 0;
+  if (isPS) {
+    // poscoDest('p'=포항/'g'=광양) 선택값 우선, 해당 지역 단가가 없으면 있는 쪽으로 자동 대체
+    const useP = poscoDest === 'p' ? (d.posco_p != null || d.posco_g == null) : (d.posco_g == null && d.posco_p != null);
+    basePrice = useP ? (d.posco_p ?? d.posco_g ?? 0) : (d.posco_g ?? d.posco_p ?? 0);
+    altPrice = useP ? (d.posco_g ?? null) : (d.posco_p ?? null);
+    deliveryLabel = useP ? '포스코 포항' : '포스코 광양';
+    altLabel = useP ? '포스코 광양' : '포스코 포항';
+    freight = useP ? FREIGHT.posco_p : FREIGHT.posco_g;
+  } else {
+    basePrice = d.dk_u || 0;
+    altPrice = calcDkTotal(d) || null;
+    deliveryLabel = '동국제강 인천';
+    altLabel = '동국 유통';
+    freight = FREIGHT.dk;
+  }
+
+  const landedPrice = basePrice + appliedIncentive;
+  const netDelivery = landedPrice - freight - vehiclePerKg - yardCost;
+  let purchasePrice, marginPerKg, targetMargin = null;
+  if (quickMode === 'maxbuy') {
+    targetMargin = inputVal;
+    purchasePrice = netDelivery - targetMargin;
+    marginPerKg = targetMargin;
+  } else {
+    purchasePrice = inputVal;
+    marginPerKg = netDelivery - purchasePrice;
+  }
+  const totalMargin = marginPerKg * kg;
+  const expectedProfitText = qtyTon > 0 ? Math.round(totalMargin / 10000).toLocaleString() + '만원' : '-';
+  const costTotal = freight + vehiclePerKg + yardCost;
+
+  document.getElementById('freight-display').value = freight;
+  document.getElementById('vehicle-perkg-label').textContent = vehiclePerKg.toFixed(1).replace('.0','');
+  document.getElementById('cost-total-label').textContent = '-' + costTotal.toFixed(1).replace('.0','') + ' 원/kg';
+  const netPreviewEl = document.getElementById('net-delivery-preview-label');
+  if (netPreviewEl) netPreviewEl.textContent = netDelivery.toFixed(0);
+
+  document.getElementById('destination-cards').innerHTML = isDK ? `
+    <div class="destination-card active" style="grid-column:1/-1;">
+      <div class="label">동국제강 인천</div>
+      <div class="price">${d.dk_u ? d.dk_u.toLocaleString() : '-'}</div>
+      <div class="unit">원/kg 유통도착 기본</div>
+    </div>` : `
+    <div class="destination-card${deliveryLabel === '포스코 포항' ? ' active' : ''}" onclick="selectPoscoDest('p')" style="cursor:pointer;">
+      <div class="label">포스코 포항</div>
+      <div class="price"${d.posco_p == null ? ' style="color:#B0B5C2;"' : ''}>${d.posco_p != null ? d.posco_p.toLocaleString() : '-'}</div>
+      <div class="unit">원/kg 기준</div>
+    </div>
+    <div class="destination-card${deliveryLabel === '포스코 광양' ? ' active' : ''}" onclick="selectPoscoDest('g')" style="cursor:pointer;">
+      <div class="label">포스코 광양</div>
+      <div class="price"${d.posco_g == null ? ' style="color:#B0B5C2;"' : ''}>${d.posco_g != null ? d.posco_g.toLocaleString() : '-'}</div>
+      <div class="unit">원/kg 기준</div>
+    </div>`;
+
+  const company = document.getElementById('calc-company').value.trim() || '거래처 미입력';
+  const memo = document.getElementById('calc-memo')?.value.trim() || '';
+  const profitGood = marginPerKg >= 0;
+  const tier = marginTier(marginPerKg);
+  const isMaxBuy = quickMode === 'maxbuy';
+
+  let bigLabel, bigValue, bigColor, bigBadgeBg, bigBadgeText;
+  if (isMaxBuy) {
+    bigLabel = '제안 매입가';
+    bigValue = purchasePrice;
+    bigColor = purchasePrice >= 0 ? '#37E67B' : '#FF6B6B';
+    bigBadgeBg = purchasePrice >= 0 ? '#1F7A45' : '#7A1F34';
+    bigBadgeText = purchasePrice >= 0 ? '✓ 제안가능' : '마진 과다';
+  } else {
+    bigLabel = '손익';
+    bigValue = marginPerKg;
+    bigColor = profitGood ? '#37E67B' : '#FF6B6B';
+    bigBadgeBg = profitGood ? '#1F7A45' : '#7A1F34';
+    bigBadgeText = profitGood ? `${tier.label} · 수익` : '손실';
+  }
+
+  document.getElementById('profit-summary-card').innerHTML = `
+    <div class="summary-company">📍 ${company}</div>
+    <div style="font-size:12px;color:#A7ADC1;">${bigLabel}</div>
+    <div class="profit-line">
+      <div><div class="profit" style="color:${bigColor}">${bigValue.toFixed(0)}</div><div style="font-size:12px;color:#A7ADC1;">원/kg</div></div>
+      <span class="badge" style="background:${bigBadgeBg}">${bigBadgeText}</span>
+    </div>
+    <div class="summary-mini-grid">
+      <div class="summary-mini"><span>실질 납품단가</span><strong>${netDelivery.toFixed(0)}</strong></div>
+      <div class="summary-mini"><span>${isMaxBuy ? '목표 마진' : '매입단가'}</span><strong>${(isMaxBuy ? targetMargin : purchasePrice).toFixed(0)}</strong></div>
+      <div class="summary-mini"><span>이익률</span><strong>${purchasePrice > 0 ? ((marginPerKg / purchasePrice) * 100).toFixed(1) : '0.0'}%</strong></div>
+    </div>`;
+
+  const tailLabel = isMaxBuy ? '- 목표 마진' : '- 견적 매입단가';
+  const tailValue = isMaxBuy ? targetMargin : purchasePrice;
+  const finalLabel = isMaxBuy ? '= 제안 매입가' : '= 예상 이익';
+  const finalValue = isMaxBuy ? purchasePrice : marginPerKg;
+  const marginHTML = `
+    <h3>확인 내역</h3>
+    <div class="detail-row"><span>납품 기본단가</span><strong>${basePrice.toLocaleString()}원</strong></div>
+    ${appliedIncentive ? `<div class="detail-row"><span>+ 인센티브/납품가산</span><strong>+${appliedIncentive.toLocaleString()}원</strong></div>` : ''}
+    <div class="detail-row"><span>= 납품가</span><strong>${landedPrice.toLocaleString()}원</strong></div>
+    <div class="detail-row"><span>- 납품운임</span><strong>${freight.toLocaleString()}원</strong></div>
+    <div class="detail-row"><span>- 경유운임 (이적 포함)</span><strong>${vehiclePerKg.toFixed(1).replace('.0','')}원</strong></div>
+    <div class="detail-row"><span>- 마당경비</span><strong>${yardCost.toLocaleString()}원</strong></div>
+    <div class="detail-row final"><span>= 실질 납품단가</span><strong>${netDelivery.toFixed(0)}원</strong></div>
+    <div class="detail-row"><span>${tailLabel}</span><strong>${tailValue.toFixed(0)}원</strong></div>
+    <div class="detail-row final"><span>${finalLabel}</span><strong>${finalValue.toFixed(0)}원</strong></div>`;
+  document.getElementById('calc-margin').innerHTML = marginHTML;
+
+  const profitCardLabel = isMaxBuy ? '목표 총이익' : '예상 이익';
+  document.getElementById('expected-profit-card').innerHTML = `<span>${profitCardLabel}<br><small>${qtyTon.toLocaleString()}t × ${marginPerKg.toFixed(0)}원/kg</small></span><span class="amount">${expectedProfitText}</span>`;
+
+  lastCalcRecord = {
+    id: Date.now(),
+    savedAt: new Date().toLocaleString('ko-KR'),
+    company,
+    memo,
+    quickMode,
+    product: d.name,
+    category: d.cat,
+    quantityKg: kg,
+    quantityTon: qtyTon,
+    deliveryLabel,
+    poscoDest: isPS ? poscoDest : null,
+    region: regionName || '',
+    vehicleCost,
+    vehiclePerKg: Math.round(vehiclePerKg * 10) / 10,
+    yardCost,
+    purchasePrice,
+    targetMargin,
+    basePrice,
+    landedPrice,
+    deliveryFreight: freight,
+    vehicleFreightPerKg: Math.round(vehiclePerKg * 10) / 10,
+    expectedProfitPerKg: marginPerKg,
+    expectedProfitTotal: totalMargin,
+    marginPerKg,
+    totalMargin,
+    marginHTML,
+  };
+
+  lastCalcProduct = name;
+}
+
+function marginTier(margin) {
+  const m = Number(margin) || 0;
+  if (m >= 20) return {label:'여유', color:'#1F7A45', bg:'#E8F5E9'};
+  if (m >= 10) return {label:'보통', color:'#B26A00', bg:'#FFF3E0'};
+  return {label:'타이트', color:'#C62828', bg:'#FFEBEE'};
+}
+
+function resetCalcForm() {
+  if (quickMode !== 'profit') setQuickMode('profit', document.getElementById('quickbtn-profit'));
+  setCalcMode(calcMode);
+  document.getElementById('calc-region').value = '';
+  document.getElementById('calc-vehicle-manual').value = '';
+  applyModeDefaults(calcMode, true);
+  updateCalc();
+}
+// ── 탭 전환 ────────────────────────────────────────────────
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  el.classList.add('active');
+
+  const isListTab = tab === 'list';
+  document.getElementById('search-bar').style.display = isListTab ? 'flex' : 'none';
+  document.getElementById('chips-wrap').style.display = isListTab ? 'flex' : 'none';
+
+  if (tab === 'history') {
+    setTimeout(() => { renderTrendChart(); initHistoryTable(); }, 50);
+  }
+  if (tab === 'company') {
+    renderCompanyRecords();
+  }
+}
+
+// ── 추이 차트 ──────────────────────────────────────────────
+function initTrendSelector() {
+  const sel = document.getElementById('trend-selector');
+  sel.innerHTML = Object.keys(PRICE_HISTORY.items).map(name =>
+    `<button class="trend-btn${name === selectedTrendItem ? ' active' : ''}" onclick="selectTrendItem('${name}',this)">${name}</button>`
+  ).join('');
+}
+
+function selectTrendItem(name, btn) {
+  selectedTrendItem = name;
+  document.querySelectorAll('#trend-selector .trend-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTrendChart();
+}
+
+let trendChart = null;
+function renderTrendChart() {
+  const canvas = document.getElementById('trend-chart');
+  if (!canvas || !window.Chart) return;
+  const prices = PRICE_HISTORY.items[selectedTrendItem];
+  if (!prices) return;
+
+  if (trendChart) { trendChart.destroy(); trendChart = null; }
+
+  const ctx = canvas.getContext('2d');
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: PRICE_HISTORY.dates,
+      datasets: [{
+        data: prices,
+        borderColor: '#1E6FD9',
+        backgroundColor: 'rgba(30,111,217,0.08)',
+        pointBackgroundColor: '#1E6FD9',
+        pointRadius: 4,
+        tension: 0.3,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          ticks: { font: { size: 11 }, callback: v => v.toLocaleString() },
+          grid: { color: 'rgba(0,0,0,0.05)' }
+        },
+        x: { ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+// ── 추이 테이블 ────────────────────────────────────────────
+let selectedHistoryItem = null;
+function initHistoryTable() {
+  const items = Object.keys(PRICE_HISTORY.items);
+  if (!selectedHistoryItem) selectedHistoryItem = items[0];
+  const sel2 = document.getElementById('trend-selector2');
+  sel2.innerHTML = items.map(n =>
+    `<button class="trend-btn${n === selectedHistoryItem ? ' active' : ''}" onclick="selectHistoryItem('${n}',this)">${n}</button>`
+  ).join('');
+  renderHistoryTable(selectedHistoryItem);
+}
+
+function selectHistoryItem(name, btn) {
+  selectedHistoryItem = name;
+  document.querySelectorAll('#trend-selector2 .trend-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHistoryTable(name);
+}
+
+function renderHistoryTable(name) {
+  const prices = PRICE_HISTORY.items[name];
+  if (!prices) return;
+  const dates = PRICE_HISTORY.dates;
+  const tbl = document.getElementById('history-table');
+  let html = '<thead><tr><th>날짜</th><th>단가</th><th>변동</th></tr></thead><tbody>';
+  prices.forEach((p, i) => {
+    const prev = i > 0 ? prices[i-1] : null;
+    const diff = prev !== null ? p - prev : null;
+    const cls = diff === null ? '' : diff > 0 ? 'up' : diff < 0 ? 'down' : 'same';
+    const diffStr = diff === null ? '-' : (diff > 0 ? '+' : '') + diff;
+    html += `<tr><td>${dates[i]}</td><td>${p.toLocaleString()}</td><td class="${cls}">${diffStr}</td></tr>`;
+  });
+  html += '</tbody>';
+  tbl.innerHTML = html;
+}
+
+// ── 업체관리 ──────────────────────────────────────────────
+function getCompanyRecords() {
+  try { return JSON.parse(localStorage.getItem('dangapyo-company-records') || '[]'); }
+  catch { return []; }
+}
+
+function setCompanyRecords(records) {
+  localStorage.setItem('dangapyo-company-records', JSON.stringify(records));
+}
+
+function exportCompanyBackup() {
+  const records = getCompanyRecords();
+  const priceLog = getAdjustLog();
+  const pricePending = getPendingQueue();
+  const quickAdjust = getQuickAdjust();
+  if (!records.length && !priceLog.length && !pricePending.length && !quickAdjust.posco && !quickAdjust.dk) {
+    showToast('백업할 내역이 없습니다');
+    return;
+  }
+  const payload = {
+    app: 'dangapyo',
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    records,
+    priceLog,
+    pricePending,
+    quickAdjust,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0,10).replace(/-/g, '');
+  a.href = URL.createObjectURL(blob);
+  a.download = `단가표_백업_${date}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  showToast('백업 파일 다운로드 시작');
+}
+
+function importCompanyBackup(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      const incoming = Array.isArray(parsed) ? parsed : parsed.records;
+      let mergedCount = 0;
+      if (Array.isArray(incoming)) {
+        const current = getCompanyRecords();
+        const seen = new Set(current.map(r => `${r.company}|${r.product}|${r.savedAt}|${r.quantityTon}`));
+        const merged = current.slice();
+        incoming.forEach(r => {
+          const key = `${r.company}|${r.product}|${r.savedAt}|${r.quantityTon}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          merged.push({...r, id: r.id || Date.now() + Math.floor(Math.random() * 100000)});
+        });
+        merged.sort((a, b) => (b.id || 0) - (a.id || 0));
+        setCompanyRecords(merged.slice(0, 500));
+        mergedCount = incoming.length;
+      }
+      if (Array.isArray(parsed.priceLog)) {
+        const currentLog = getAdjustLog();
+        const seenIds = new Set(currentLog.map(l => l.id));
+        parsed.priceLog.forEach(l => { if (!seenIds.has(l.id)) { currentLog.push(l); seenIds.add(l.id); } });
+        setAdjustLog(currentLog);
+      }
+      if (Array.isArray(parsed.pricePending)) {
+        const currentPending = getPendingQueue();
+        const seenIds2 = new Set(currentPending.map(p => p.id));
+        parsed.pricePending.forEach(p => { if (!seenIds2.has(p.id)) { currentPending.push(p); seenIds2.add(p.id); } });
+        setPendingQueue(currentPending);
+      }
+      if (parsed.quickAdjust && typeof parsed.quickAdjust === 'object') {
+        setQuickAdjust(Object.assign({posco:0, dk:0}, parsed.quickAdjust));
+      }
+      rebuildData();
+      renderList(); initCalcSelect(); updateCalc(); renderEditSections();
+      renderCompanyRecords();
+      renderCompanySuggestions();
+      renderPendingPanel();
+      renderAdjustLogPanel();
+      renderQuickAdjustPanel();
+      showToast(`백업 불러오기 완료 (거래처 내역 ${mergedCount}건 포함)`);
+    } catch (err) {
+      showToast('백업 파일을 읽을 수 없습니다');
+    } finally {
+      event.target.value = '';
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function fillCalcFromRecord(record) {
+  document.getElementById('calc-company').value = record.company || '';
+  const memoEl = document.getElementById('calc-memo');
+  if (memoEl) memoEl.value = record.memo || '';
+  const product = data.find(d => d.name === record.product);
+  if (product) {
+    const targetMode = ['경량','압축'].includes(product.cat) ? 'compress' : 'heavy';
+    if (calcMode !== targetMode) setCalcMode(targetMode);
+    document.getElementById('calc-product').value = product.name;
+    if (targetMode === 'compress' && (record.poscoDest === 'p' || record.poscoDest === 'g')) poscoDest = record.poscoDest;
+    renderGradeButtons();
+  }
+  if (record.quickMode && record.quickMode !== quickMode) {
+    const btn = document.getElementById(record.quickMode === 'maxbuy' ? 'quickbtn-maxbuy' : 'quickbtn-profit');
+    setQuickMode(record.quickMode, btn);
+  }
+  document.getElementById('calc-region').value = record.region || '';
+  document.getElementById('calc-vehicle-manual').value = record.vehicleCost && !record.region ? record.vehicleCost : '';
+  document.getElementById('calc-qty').value = record.quantityTon || (record.quantityKg / 1000) || 50;
+  if (quickMode === 'maxbuy' && record.targetMargin !== undefined && record.targetMargin !== null) {
+    document.getElementById('purchase-price').value = record.targetMargin;
+  } else if (record.purchasePrice !== undefined) {
+    document.getElementById('purchase-price').value = record.purchasePrice;
+  }
+  if (record.yardCost !== undefined) document.getElementById('calc-yard').value = record.yardCost;
+  includeStayCost = !!record.includeStayCost;
+  const stayBtn = document.getElementById('stay-toggle');
+  if (stayBtn) stayBtn.textContent = includeStayCost ? '숙박비 포함' : '숙박비 제외';
+  updateCalc();
+}
+
+function renderCompanySuggestions() {
+  const dl = document.getElementById('company-suggestions');
+  if (!dl) return;
+  const seen = new Set();
+  const options = [];
+  COMPANY_MASTER.forEach(name => {
+    const cleanName = String(name || '').trim();
+    if (!cleanName || seen.has(cleanName)) return;
+    seen.add(cleanName);
+    options.push(`<option value="${cleanName}" label="기초 거래처"></option>`);
+  });
+  getCompanyRecords().forEach(r => {
+    const name = (r.company || '').trim();
+    if (!name || seen.has(name)) return;
+    seen.add(name);
+    const tier = r.marginPerKg !== undefined ? marginTier(r.marginPerKg) : null;
+    const label = `${r.product || ''}${r.region ? ' · ' + r.region : ''}${r.marginPerKg !== undefined ? ' · ' + Number(r.marginPerKg).toFixed(0) + '원/kg' : ''}${tier ? ' · ' + tier.label : ''}${r.memo ? ' · ' + r.memo.slice(0,20) : ''}`;
+    options.push(`<option value="${name}" label="${label}"></option>`);
+  });
+  dl.innerHTML = options.join('');
+}
+
+function isCompressCategory(cat) { return ['경량','압축'].includes(cat); }
+
+function applyCompanySuggestion() {
+  const name = document.getElementById('calc-company').value.trim();
+  if (!name) { updateCalc(); return; }
+  const wantCompress = calcMode === 'compress';
+  const companyRecords = getCompanyRecords().filter(r => (r.company || '').trim() === name);
+  const record = companyRecords.find(r => isCompressCategory(r.category) === wantCompress);
+  if (record) {
+    fillCalcFromRecord(record);
+    showToast('최근 저장 내역 불러옴');
+  } else if (companyRecords.length) {
+    // 같은 거래처의 다른 품목군(경량↔중량) 내역만 있는 경우 — 지금 입력 중인 내용을 덮어쓰지 않음
+    updateCalc();
+    showToast(`이 거래처의 ${companyRecords[0].category} 상담내역이 따로 있어요 (지금 입력은 그대로 유지됩니다)`);
+  } else if (COMPANY_MASTER.includes(name)) {
+    updateCalc();
+    showToast('기초 거래처 선택');
+  } else {
+    updateCalc();
+  }
+}
+let lastSavedRecordId = null;
+
+function saveCalcRecord() {
+  updateCalc();
+  if (!lastCalcRecord || !lastCalcRecord.quantityKg) {
+    showToast('수량 입력 후 저장해주세요');
+    return;
+  }
+  const company = document.getElementById('calc-company')?.value.trim() || '미입력 업체';
+  const record = {...lastCalcRecord, id: Date.now() + Math.floor(Math.random() * 1000), company, savedAt: new Date().toLocaleString('ko-KR')};
+  const records = getCompanyRecords();
+  records.unshift(record);
+  setCompanyRecords(records.slice(0, 200));
+  renderCompanyRecords();
+  lastSavedRecordId = record.id;
+  const shareBtn = document.getElementById('share-last-btn');
+  if (shareBtn) shareBtn.style.display = 'block';
+  showToast('업체관리 저장 완료');
+}
+
+function buildShareText(r) {
+  const tier = r.marginPerKg !== undefined ? marginTier(r.marginPerKg) : null;
+  const lines = [
+    '[단가표 상담내역]',
+    `거래처: ${r.company || '미입력'}`,
+    `품목: ${r.product || ''}${r.category ? ' (' + r.category + ')' : ''}`,
+    `수량: ${(r.quantityTon || 0).toFixed(2)}t`,
+    r.region ? `경유지역: ${r.region}` : null,
+    `납품가(인센포함): ${Number(r.landedPrice || r.basePrice || 0).toLocaleString()}원/kg`,
+    `경유운임(이적포함): ${Number(r.vehiclePerKg || 0).toFixed(1)}원/kg`,
+    `마당경비: ${Number(r.yardCost || 0).toLocaleString()}원/kg`,
+    r.quickMode === 'maxbuy'
+      ? `제안 매입가: ${Number(r.purchasePrice || 0).toLocaleString()}원/kg (목표마진 ${Number(r.targetMargin || 0).toFixed(0)}원/kg)`
+      : `매입단가: ${Number(r.purchasePrice || 0).toLocaleString()}원/kg`,
+    `마진: ${Number(r.marginPerKg || 0).toFixed(0)}원/kg${tier ? ' (' + tier.label + ')' : ''}`,
+    `예상 총이익: ${Number(r.expectedProfitTotal || r.totalMargin || 0).toLocaleString()}원`,
+    r.memo ? `메모: ${r.memo}` : null,
+    `저장시각: ${r.savedAt || ''}`,
+  ].filter(Boolean);
+  return lines.join('\n');
+}
+
+async function shareCompanyRecord(id) {
+  const record = getCompanyRecords().find(r => r.id === id);
+  if (!record) { showToast('공유할 내역을 찾을 수 없습니다'); return; }
+  const text = buildShareText(record);
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: '단가표 상담내역', text });
+      return;
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('공유 기능 미지원 기기라 내용이 복사되었습니다. 카카오톡에 붙여넣기 해주세요');
+  } catch (e) {
+    showToast('공유에 실패했습니다');
+  }
+}
+
+function deleteCompanyRecord(id) {
+  const records = getCompanyRecords().filter(r => r.id !== id);
+  setCompanyRecords(records);
+  renderCompanyRecords();
+  showToast('저장 내역 삭제 완료');
+}
+
+function loadCompanyRecord(id) {
+  const record = getCompanyRecords().find(r => r.id === id);
+  if (!record) return;
+  fillCalcFromRecord(record);
+  switchTab('calc', document.getElementById('tab-btn-calc'));
+}
+
+function renderCompanyRecords() {
+  const container = document.getElementById('company-list');
+  if (!container) return;
+  const records = getCompanyRecords();
+  if (!records.length) {
+    container.innerHTML = '<div class="empty"><p>저장된 계산 내역이 없습니다</p></div>';
+    return;
+  }
+  container.innerHTML = records.map(r => {
+    const marginVal = r.marginPerKg !== undefined ? Number(r.marginPerKg) : null;
+    const tier = marginVal !== null ? marginTier(marginVal) : null;
+    return `
+    <div class="company-card">
+      <h3>${r.company || '미입력 업체'}</h3>
+      <div class="company-meta">
+        <span class="company-pill">${r.product}</span>
+        <span class="company-pill">${(r.quantityTon || 0).toFixed(2)}t</span>
+        ${r.region ? `<span class="company-pill">${r.region}</span>` : ''}
+        ${r.quickMode === 'maxbuy' ? `<span class="company-pill">최대매입가 제안</span>` : ''}
+        <span class="company-pill">${r.savedAt}</span>
+      </div>
+      <div style="font-size:12px;color:var(--sub);line-height:1.6;">
+        견적 ${Number(r.purchasePrice || 0).toLocaleString()}원/kg · 납품가 ${Number(r.landedPrice || r.basePrice || 0).toLocaleString()}원/kg<br>
+        경유운임(이적포함) ${Number(r.vehiclePerKg || 0).toFixed(1)}원/kg${r.includeStayCost ? ' (숙박포함)' : ''} · 납품운임 ${Number(r.deliveryFreight || 0).toLocaleString()}원/kg · 마당경비 ${r.yardCost || 0}원/kg
+      </div>
+      <div class="company-margin" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span>${marginVal !== null ? marginVal.toFixed(0) + '원/kg 이익' : extractMarginText(r.marginHTML)}</span>
+        ${tier ? `<span style="font-size:11px;font-weight:800;padding:3px 8px;border-radius:20px;background:${tier.bg};color:${tier.color};">${tier.label}</span>` : ''}
+      </div>
+      <div style="font-size:13px;color:var(--sub);font-weight:700;margin-top:4px;">예상 총이익 ${Number(r.expectedProfitTotal || r.totalMargin || 0).toLocaleString()}원</div>
+      ${r.memo ? `<div style="font-size:12px;color:var(--text);background:var(--bg);border-radius:8px;padding:8px;margin-top:8px;line-height:1.5;">📝 ${r.memo}</div>` : ''}
+      <div class="company-actions">
+        <button class="small-btn primary" onclick="loadCompanyRecord(${r.id})">불러오기</button>
+        <button class="small-btn" style="background:#FEE500;color:#3C1E1E;border-color:#FEE500;" onclick="shareCompanyRecord(${r.id})">💬 공유</button>
+        <button class="small-btn danger" onclick="deleteCompanyRecord(${r.id})">삭제</button>
+      </div>
+    </div>
+  `;
+  }).join('');
+}
+
+function extractMarginText(html) {
+  const match = String(html || '').match(/([+-]?\d+(?:\.\d+)?)원\/kg<\/span>/);
+  return match ? match[1] + '원/kg' : '이익 확인';
+}
+
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1800);
+}
+// ── 수정 섹션 ──────────────────────────────────────────────
+const CAT_ORDER = ['생철','중량','경량','압축','선반','길로틴','슈레더'];
+const FIELD_LABELS = {
+  posco_g:'포스코광양', posco_p:'포스코포항',
+  dk_u:'동국기본단가',
+  bs_a:'보성도착', bs_l:'보성상차',
+};
+
+function renderEditSections() {
+  const container = document.getElementById('edit-sections');
+  container.innerHTML = CAT_ORDER.map(cat => {
+    const items = data.filter(d => d.cat === cat);
+    if (!items.length) return '';
+    return `<div class="edit-section">
+      <h3>${cat}</h3>
+      ${items.map(d => `
+        <div class="edit-row">
+          <div class="edit-row-label">${d.name}</div>
+          <div class="edit-inputs">
+            ${Object.entries(FIELD_LABELS).map(([k, label]) => `
+              <div>
+                <input class="edit-input" type="number" data-name="${d.name}" data-field="${k}"
+                  value="${d[k] !== null && d[k] !== undefined ? d[k] : ''}"
+                  placeholder="-" inputmode="decimal" onfocus="this.select()">
+                <div class="edit-input-label">${label}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+function saveEdits() {
+  document.querySelectorAll('.edit-input').forEach(inp => {
+    const name = inp.dataset.name;
+    const field = inp.dataset.field;
+    const val = inp.value.trim();
+    const item = data.find(d => d.name === name);
+    if (item) {
+      item[field] = val === '' ? null : Number(val);
+    }
+  });
+  renderList();
+  updateCalc();
+  renderEditSections();
+  showToast('수동입력 저장 완료');
+}
+
+function resetEdits() {
+  setAdjustLog([]);
+  setPendingQueue([]);
+  setQuickAdjust({posco:0, dk:0});
+  rebuildData();
+  renderList();
+  initCalcSelect();
+  updateCalc();
+  renderEditSections();
+  renderPendingPanel();
+  renderAdjustLogPanel();
+  renderQuickAdjustPanel();
+  showToast('원본 데이터로 초기화 완료 (공지 조정 내역·업체 설정도 함께 초기화됨)');
+}
+</script>
+</body>
+</html>
