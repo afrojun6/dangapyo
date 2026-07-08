@@ -1044,6 +1044,12 @@ const SCHEDULED_ADJUSTMENTS = [
     description: '보성(춘천) 매입단가(도착+상차) 전품목 -10원 (7/7부)',
     rules: [{ catFilter: '전체', fieldPreset: 'bs_al', delta: -10 }],
   },
+  {
+    id: 'sched-2026-07-09-posco-g',
+    effectiveDate: '2026-07-09',
+    description: '포스코 광양 전등급 -5원 (7/9부, 포항 변동없음)',
+    rules: [{ catFilter: '전체', fieldPreset: 'posco_g', delta: -5 }],
+  },
 ];
 
 function getAdjustLog() {
