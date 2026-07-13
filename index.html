@@ -345,9 +345,9 @@
         </div>
         <div class="form-grid">
           <div class="field"><label>일반계약</label><input class="calc-input" id="dk-contract" type="number" value="20" oninput="updateCalc()"></div>
-          <div class="field" id="dk-field-yard"><label>구좌하치장</label><input class="calc-input" id="dk-yard" type="number" value="20" oninput="updateCalc()"></div>
+          <div class="field" id="dk-field-yard"><label>구좌하치장</label><input class="calc-input" id="dk-yard" type="number" value="15" oninput="updateCalc()"></div>
           <div class="field" id="dk-field-premium" style="display:none;"><label>우수·육성 추가</label><input class="calc-input" id="dk-premium" type="number" value="10" oninput="updateCalc()"></div>
-          <div class="field" id="dk-field-temp" style="display:none;"><label>한시계약 <small>~7/6</small></label><input class="calc-input" id="dk-temp" type="number" value="5" oninput="updateCalc()"></div>
+          <div class="field" id="dk-field-temp" style="display:none;"><label>한시계약 <small>~7/13(종료)</small></label><input class="calc-input" id="dk-temp" type="number" value="5" oninput="updateCalc()"></div>
         </div>
         <div class="field" style="margin-top:6px;">
           <label>운임보조 지역</label>
@@ -629,16 +629,19 @@ const REGION_DATA = [
   {name:'화천 사창리',fuel:120000, stay:0},
 ];
 
-// ── 동국제강 정책단가 (2026-07-02 확정) ─────────────────────
-// 하치장 TOTAL = 기본단가 + 구좌하치장(20,길로틴22) + 일반계약(20) + 운임보조(지역별)
-// 우수·육성 TOTAL = 기본단가 + 일반계약(20) + 우수육성추가(10) + 한시계약(5,~7/6) + 운임보조(지역별)
+// ── 동국제강 정책단가 (2026-07-14 갱신) ─────────────────────
+// 하치장 TOTAL = 기본단가 + 구좌하치장(15,길로틴17) + 일반계약(20) + 운임보조(지역별)
+// 우수·육성 TOTAL = 기본단가 + 일반계약(20) + 우수육성추가(10) + 운임보조(지역별)
+// * 구좌하치장 값 20/22는 "기본 15/17원" + "중량류·길로틴 한시계약 +5원"이 합산된 값이었으나,
+//   그 +5원 계약이 2026-07-14부로 종료되어 다시 기본값(15/길로틴17)으로 복귀함.
+// * 한시계약(temp, 우수육성 등급 +5원, ~7/13)도 이미 종료 — temp 필드는 계산기 UI 기본값 참고용으로만 남김.
 const DK_POLICY_DEFAULT = {
   contract: 20,        // 일반계약 (전업체 공통, 두 등급 모두 적용)
-  yard: 20,             // 구좌하치장 (하치장 등급만)
-  yardGuillotine: 22,   // 길로틴 품목은 구좌하치장 +2원
+  yard: 15,             // 구좌하치장 (하치장 등급만) — 2026-07-14부로 15원(기존 20원, 중량류계약 +5원 종료 반영)
+  yardGuillotine: 17,   // 길로틴 품목은 구좌하치장 +2원 — 2026-07-14부로 17원(기존 22원에서 동일하게 -5원)
   premium: 10,          // 우수·육성업체 추가 (우수·육성 등급만)
-  temp: 5,              // 한시계약 (~7/6까지)
-  tempDeadline: '2026-07-06',
+  temp: 5,              // 한시계약 (~7/13까지, 현재는 만료되어 계산기에서 자동 비활성화됨)
+  tempDeadline: '2026-07-13',
   homeRegion: '춘천',   // 보성자원 마당 소재지 기준 기본 운임보조 지역
 };
 // 운반비 보조단가(운임보조) — 지역별 34곳, 동국제강이 보성에 지급하는 지원금(원/kg)
@@ -1035,8 +1038,16 @@ const SCHEDULED_ADJUSTMENTS = [
   {
     id: 'sched-2026-07-07-dk',
     effectiveDate: '2026-07-07',
-    description: '동국제강 전품목 -10원 (7/7부)',
-    rules: [{ catFilter: '전체', fieldPreset: 'dk_u', delta: -10 }],
+    description: '동국제강 전등급 -10원, 단 압축·길로틴은 -5원 (7/7부)',
+    rules: [
+      { catFilter: '생철', fieldPreset: 'dk_u', delta: -10 },
+      { catFilter: '중량', fieldPreset: 'dk_u', delta: -10 },
+      { catFilter: '경량', fieldPreset: 'dk_u', delta: -10 },
+      { catFilter: '선반', fieldPreset: 'dk_u', delta: -10 },
+      { catFilter: '슈레더', fieldPreset: 'dk_u', delta: -10 },
+      { catFilter: '압축', fieldPreset: 'dk_u', delta: -5 },
+      { catFilter: '길로틴', fieldPreset: 'dk_u', delta: -5 },
+    ],
   },
   {
     id: 'sched-2026-07-07-bs',
