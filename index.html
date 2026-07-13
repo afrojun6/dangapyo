@@ -1050,6 +1050,12 @@ const SCHEDULED_ADJUSTMENTS = [
     description: '포스코 광양 전등급 -5원 (7/9부, 포항 변동없음)',
     rules: [{ catFilter: '전체', fieldPreset: 'posco_g', delta: -5 }],
   },
+  {
+    id: 'sched-2026-07-20-dk',
+    effectiveDate: '2026-07-20',
+    description: '동국제강 전등급 -10원 (7/20부, 배차제한 병행 예정)',
+    rules: [{ catFilter: '전체', fieldPreset: 'dk_u', delta: -10 }],
+  },
 ];
 
 function getAdjustLog() {
