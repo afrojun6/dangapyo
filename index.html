@@ -343,6 +343,7 @@
           <button class="quick-btn active" type="button" id="dktier-btn-general" onclick="setDkTierMode('general', this)">하치장</button>
           <button class="quick-btn" type="button" id="dktier-btn-premium" onclick="setDkTierMode('premium', this)">우수·육성</button>
         </div>
+        <div id="dk-formula-hint" style="font-size:12px;color:var(--sub);margin:-4px 0 10px;line-height:1.5;"></div>
         <div class="form-grid">
           <div class="field"><label>일반계약</label><input class="calc-input" id="dk-contract" type="number" value="20" oninput="updateCalc()"></div>
           <div class="field" id="dk-field-yard"><label>구좌하치장</label><input class="calc-input" id="dk-yard" type="number" value="15" oninput="updateCalc()"></div>
@@ -443,6 +444,9 @@
 
 <!-- 단가표 탭 -->
 <div class="tab-content" id="tab-list">
+  <div style="padding:10px 16px 0;font-size:12px;color:var(--sub);line-height:1.5;">
+    동국제강 "기본"=기본단가+일반계약(20) · TOTAL(하치장·춘천 기준)=기본단가+일반계약(20)+구좌하치장(15, 길로틴17)+운임보조(8)
+  </div>
   <div class="list-wrap" id="product-list"></div>
 </div>
 
@@ -1602,6 +1606,7 @@ function initCalcSelect() {
   document.getElementById('incent-card-heading').textContent = calcMode === 'heavy' ? '④ 동국제강 정책단가 (원/kg)' : '④ 인센티브 (원/kg)';
   applyModeDefaults(calcMode, false);
   if (calcMode === 'heavy' && defaultItem) applyDkYardDefault(defaultItem.name);
+  if (calcMode === 'heavy') updateDkFormulaHint();
   document.getElementById('tab-calc').classList.toggle('heavy', calcMode === 'heavy');
   renderGradeButtons();
 }
@@ -1686,7 +1691,19 @@ function setDkTierMode(mode, btn) {
   document.getElementById('dk-field-yard').style.display = mode === 'general' ? '' : 'none';
   document.getElementById('dk-field-premium').style.display = mode === 'premium' ? '' : 'none';
   document.getElementById('dk-field-temp').style.display = mode === 'premium' ? '' : 'none';
+  updateDkFormulaHint();
   updateCalc();
+}
+
+function updateDkFormulaHint() {
+  const hintEl = document.getElementById('dk-formula-hint');
+  if (!hintEl) return;
+  const p = DK_POLICY_DEFAULT;
+  if (dkTierMode === 'premium') {
+    hintEl.textContent = `공식: 기본단가 + 일반계약(${p.contract}) + 우수·육성 추가(${p.premium}) + 운임보조 = TOTAL  (구좌하치장 미포함)`;
+  } else {
+    hintEl.textContent = `공식: 기본단가 + 일반계약(${p.contract}) + 구좌하치장(${p.yard}, 길로틴 ${p.yardGuillotine}) + 운임보조 = TOTAL`;
+  }
 }
 
 function initDkFreightRegionSelect() {
